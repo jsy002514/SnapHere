@@ -1,0 +1,21 @@
+{
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "java.compile.nullAnalysis.mode": "automatic",
+  "java.format.settings.url": "https://raw.githubusercontent.com/google/styleguide/gh-pages/eclipse-java-google-style.xml",
+  "java.saveActions.organizeImports": true,
+  "editor.formatOnSave": true,
+  "files.encoding": "utf8",
+  "files.eol": "\n",
+  "files.exclude": {
+    "**/.gradle": true,
+    "**/build": true,
+    "**/bin": true
+  },
+  "search.exclude": {
+    "**/build": true,
+    "**/.gradle": true
+  },
+  "[java]": { "editor.tabSize": 4 },
+  "[yaml]": { "editor.tabSize": 2 },
+  "[markdown]": { "editor.wordWrap": "on" }
+}

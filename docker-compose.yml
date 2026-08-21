@@ -1,0 +1,39 @@
+# MySQL 을 직접 설치하지 않고 컨테이너로 띄웁니다.
+# Docker Desktop 이 있으면 이게 가장 간단합니다.
+#
+#   docker compose up -d          시작 (첫 실행 시 스키마 자동 적용)
+#   docker compose logs -f mysql  로그
+#   docker compose down           정지
+#   docker compose down -v        정지 + 데이터 삭제 (스키마 다시 적용하고 싶을 때)
+#
+# ⚠️ 스키마는 볼륨이 비어 있을 때만 자동 적용됩니다.
+#    schema.sql 을 고친 뒤 다시 넣으려면 down -v 로 볼륨을 지우세요.
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: snaphere-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: snaphere1234
+      MYSQL_DATABASE: tourlab
+      TZ: Asia/Seoul
+    ports:
+      - "3306:3306"
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --default-time-zone=+09:00
+    volumes:
+      - mysql-data:/var/lib/mysql
+      # 컨테이너 최초 기동 시 이 폴더의 .sql 을 알파벳 순으로 실행합니다
+      - ./docs/03_schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./docs/04_seed_regions.sql:/docker-entrypoint-initdb.d/02-seed-regions.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-psnaphere1234"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  mysql-data:

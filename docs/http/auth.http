@@ -1,0 +1,80 @@
+### SnapHere API 확인용 (VS Code REST Client 확장 필요)
+### 위의 "Send Request" 를 눌러 하나씩 실행하세요.
+@host = http://localhost:8080/api/v1
+
+### 1) 서버 살아있나 (비로그인)
+GET {{host}}/regions
+
+### 2) 아이디 중복 확인
+GET {{host}}/auth/check-login-id?loginId=tester01
+
+### 3) 회원가입  → 응답의 accessToken 을 아래 @token 에 붙여넣기
+# @name signup
+POST {{host}}/auth/signup
+Content-Type: application/json
+
+{
+  "loginId": "tester01",
+  "password": "abcd1234",
+  "passwordConfirm": "abcd1234",
+  "nickname": "테스터",
+  "email": "t@example.com",
+  "termsAgreed": true,
+  "deviceId": "dev-local-1",
+  "platform": "WEB"
+}
+
+### 4) 로그인
+# @name login
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "loginId": "tester01", "password": "abcd1234", "deviceId": "dev-local-1", "platform": "WEB" }
+
+### ↓ 위 응답의 accessToken 을 여기에 붙여넣으세요
+@token = 여기에_accessToken
+
+### 5) 내 정보 조회
+GET {{host}}/users/me
+Authorization: Bearer {{token}}
+
+### 6) 프로필 수정
+PATCH {{host}}/users/me
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "nickname": "너구리즈", "bio": "사진 찍는 여행자", "locale": "ko" }
+
+### 7) SNS 링크 — 허용 도메인 (성공해야 함)
+PATCH {{host}}/users/me
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "snsLinks": { "instagram": "https://instagram.com/mytrip" } }
+
+### 8) SNS 링크 — 허용 안 된 도메인 (USER_006 이 나와야 정상)
+PATCH {{host}}/users/me
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "snsLinks": { "phishing": "https://evil.example.com/login" } }
+
+### 9) 토큰 없이 보호된 API 호출 (AUTH_006 이 나와야 정상)
+GET {{host}}/users/me
+
+### 10) 잘못된 비밀번호로 로그인 (AUTH_003 이 나와야 정상)
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "loginId": "tester01", "password": "wrongpassword" }
+
+### 11) 없는 아이디로 로그인 → 10번과 "같은" AUTH_003 이어야 정상
+###     (아이디 존재 여부가 노출되면 안 됨)
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "loginId": "nobody_here_99", "password": "abcd1234" }
+
+### 12) 계정 삭제 전 미리보기
+GET {{host}}/users/me/deletion-preview
+Authorization: Bearer {{token}}

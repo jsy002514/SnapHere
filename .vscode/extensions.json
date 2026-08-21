@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "vscjava.vscode-java-pack",
+    "vmware.vscode-boot-dev-pack",
+    "vscjava.vscode-gradle",
+    "redhat.vscode-yaml",
+    "humao.rest-client",
+    "ms-vscode-remote.remote-wsl"
+  ]
+}

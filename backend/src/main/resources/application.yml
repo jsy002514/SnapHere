@@ -1,0 +1,117 @@
+spring:
+  application:
+    name: snaphere
+  profiles:
+    # application-local.yml 에 DB 비밀번호 등 개인 설정을 둔다 (git 제외 대상)
+    active: local
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/tourlab?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&rewriteBatchedStatements=true
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      # 스키마는 docs/schema.sql 이 원본. validate 는 엔티티-테이블 불일치를 기동 시점에 잡아준다.
+      # 기동이 스키마 검증에서 막히면 일단 none 으로 바꾸고 원인을 따로 확인할 것.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        default_batch_fetch_size: 100   # N+1 완화. 지우지 말 것
+    open-in-view: false                 # 컨트롤러에서 지연로딩 터지는 것을 막는다
+  jackson:
+    time-zone: Asia/Seoul
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+
+server:
+  port: 8080
+  servlet:
+    encoding: { charset: UTF-8, force: true }
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:change-me-to-a-random-string-at-least-64-bytes-long-for-hs512-000000}
+    access-token-validity-seconds: 7200      # 2시간
+    refresh-token-validity-seconds: 2592000  # 30일
+  auth:
+    login-fail-limit: 5
+    login-block-minutes: 5
+  post:
+    daily-limit: 30
+    per-place-daily-limit: 3
+    max-image-count: 10
+    max-image-bytes: 10485760      # 10MB
+    max-video-bytes: 104857600     # 100MB
+    max-video-seconds: 60
+  tier:
+    default-verify-radius-m: 500       # 관광지
+    user-place-verify-radius-m: 100    # 사용자가 만든 장소
+    on-site-window-minutes: 10
+    location-confirmed-days: 30
+  media:
+    # 개발용 로컬 저장소. 운영에서는 S3MediaStorage 를 추가하면 이 설정은 무시된다.
+    local-dir: ./media-store
+    base-url: ${MEDIA_BASE_URL:http://localhost:8080/media}
+    upload-url-ttl-seconds: 300
+
+  place:
+    daily-create-limit: 5
+    duplicate-radius-m: 100
+  follow:
+    daily-limit: 200
+  ranking:
+    # ⚠️ 이 수치는 팀 미결정 사항이다 (docs/00_작업현황.md 미결정 5번).
+    #    Tier 배수는 "현장 인증한 사진이 더 가치 있다" 는 이 서비스의 전제를 수치로 옮긴 것이다.
+    #    NO_LOCATION 은 아예 집계에서 제외되므로 가중치가 없다.
+    on-site-weight: 3.0
+    location-confirmed-weight: 1.8
+    like-weight: 0.5
+    comment-weight: 1.0
+    top-n: 100
+    history-keep-days: 90
+
+  heatmap:
+    realtime-cache-seconds: 60
+    # 스케줄러 주기(ms). realtime-cache-seconds 와 맞춰 둘 것.
+    realtime-refresh-ms: 60000
+    realtime-window-minutes: 60
+    fallback-min-cells: 5
+    max-cells: 500
+  account:
+    purge-grace-days: 30
+  tour-api:
+    # 한국관광공사 국문 관광정보 서비스_GW (공공데이터포털 15101578)
+    # ⚠️ 오퍼레이션 이름 끝자리가 2 인 신규(GW) 버전이다. KorService1 과 혼용하지 말 것.
+    base-url: https://apis.data.go.kr/B551011/KorService2
+    # ⚠️ 인증키는 여기에 절대 쓰지 않는다. application-local.yml 또는 환경변수 TOUR_API_KEY 로만 넣는다.
+    service-key: ${TOUR_API_KEY:}
+    mobile-os: ETC
+    mobile-app: SnapHere
+    num-of-rows: 100
+    connect-timeout-ms: 3000
+    read-timeout-ms: 10000
+    # 적재 대상 contentTypeId — 처음에는 12(관광지) 만으로 파이프라인을 완성할 것
+    content-type-ids: 12,14,15,28,38,39
+    # 개발계정 일 1,000회 제한. 런타임 호출 금지, 배치에서만 사용.
+    daily-call-budget: 1000
+    # ⚠️ 기본 OFF. 로컬에서 서버를 띄울 때마다 외부 API 를 수천 번 호출하면 일 한도가 바로 소진된다.
+    #    운영 서버에서만 true 로 켠다. 로컬 확인은 관리자 수동 트리거를 쓴다.
+    scheduler-enabled: ${TOUR_API_SCHEDULER:false}
+
+  sns:
+    allowed-hosts: instagram.com,www.instagram.com,youtube.com,www.youtube.com,youtu.be,tiktok.com,www.tiktok.com,x.com,twitter.com,blog.naver.com
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:3000,http://localhost:5173,http://localhost:19006}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui/index.html
+    tags-sorter: alpha
+    operations-sorter: method
+
+logging:
+  level:
+    com.ssafy.snaphere: DEBUG
+    org.hibernate.SQL: DEBUG

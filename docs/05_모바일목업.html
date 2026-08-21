@@ -1,0 +1,696 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>관광데이터랩 · 모바일 목업 v3</title><style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+ --aq-50:#F2FBFD; --aq-100:#EAF9FC; --aq-200:#B8E8EE; --aq-300:#7ADDF2;
+ --aq-400:#3FC4E0; --aq-500:#12A3C2; --aq-600:#0A6D84; --aq-700:#0A3D4B;
+ --mint:#BFE8C8; --mint-t:#EDF9F0; --mint-on:#123D26; --mint-tx:#1F7A4D;
+ --pink:#F2C7DB; --pink-t:#FDF1F6; --pink-on:#6B1236; --pink-tx:#C43B7A;
+ --lily:#CBB7F5; --lily-t:#F5F0FE; --lily-on:#2E1466; --lily-tx:#6D3FD0;
+ --pear:#F3EEB6; --pear-t:#FDFBEB; --pear-on:#4A3A00; --pear-tx:#8F6100;
+ --err:#A32A2A; --err-t:#FDECEC;
+ --n0:#fff; --n50:#F5FBFC; --n100:#EAF6F8; --n200:#D7EBEF; --n300:#B3D2D9;
+ --n400:#8AA8B2; --n500:#546B76; --n600:#3E5B66; --n700:#26454F; --n800:#183642; --n900:#102730;
+ --sh1:0 1px 3px rgba(16,39,48,.08); --sh2:0 4px 14px rgba(16,39,48,.10);
+ --sh3:0 10px 28px rgba(16,39,48,.14);
+}
+body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+ background:#FCFDFE;color:var(--n900);letter-spacing:-.02em;padding:0 28px 72px}
+.colorbar{display:flex;height:9px;margin:0 -28px 30px;border-radius:0}
+.colorbar i{flex:1}
+.wrap{max-width:1560px;margin:0 auto}
+h2.sec{font-size:17px;font-weight:800;color:var(--aq-700);margin:44px 0 6px;
+ padding-bottom:10px;border-bottom:2px solid var(--aq-200)}
+h2.sec:first-of-type{margin-top:8px}
+p.secsub{font-size:13px;color:var(--n500);margin:0 0 22px}
+.hero{background:linear-gradient(135deg,var(--aq-700),var(--aq-600) 55%,var(--aq-500));
+ color:#fff;border-radius:18px;padding:28px 30px;box-shadow:var(--sh3)}
+.hero h1{font-size:26px;font-weight:800;margin-bottom:8px}
+.hero p{font-size:14px;opacity:.92;line-height:1.65}
+.hero .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.hero .chips span{font-size:11.5px;font-weight:700;background:rgba(255,255,255,.16);
+ border:1px solid rgba(255,255,255,.28);padding:5px 11px;border-radius:999px}
+.row{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start}
+.ph{width:308px}
+.ph{display:flex;flex-direction:column}
+.ph figcaption{order:2;font-size:12.5px;font-weight:800;color:var(--n800);margin-top:11px;padding-left:2px}
+.frame{position:relative;width:308px;height:640px;background:#fff;border-radius:26px;
+ border:1.5px solid var(--n200);box-shadow:0 3px 14px rgba(16,39,48,.07);overflow:hidden}
+.statusbar{height:26px;min-height:26px;display:flex;align-items:center;justify-content:space-between;
+ padding:0 14px;font-size:10px;font-weight:700;color:var(--n700)}
+.statusbar i{display:block;width:15px;height:8px;border:1.2px solid var(--n400);border-radius:2px}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--n0);overflow:hidden}
+.pnote{order:3;font-size:11.5px;color:var(--n500);line-height:1.6;margin-top:6px;padding-left:2px}
+.pnote b{color:var(--aq-600)}
+
+/* 상단바 */
+.topbar{height:52px;min-height:52px;display:flex;align-items:center;gap:6px;padding:0 12px;
+ border-bottom:1px solid var(--n100);background:#fff;position:relative;z-index:3}
+.topbar h1{font-size:16px;font-weight:700;flex:1;text-align:center}
+.tb-ic,.tb-right{color:var(--n700);display:flex;align-items:center;min-width:30px}
+.tb-right{justify-content:flex-end;gap:8px}
+.tb-sp{min-width:30px}
+.body{flex:1;overflow:hidden;position:relative}
+.pad{padding:16px}
+
+/* 탭바 */
+.tabbar{height:58px;min-height:58px;display:flex;align-items:center;background:#fff;
+ border-top:1px solid var(--n100);position:relative;z-index:3}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--n400);position:relative}
+.tab span{font-size:10px;font-weight:700}
+.tab.on{color:var(--aq-600)}
+.tab-fab{position:relative}
+.fab{position:absolute;top:-20px;width:52px;height:52px;border-radius:999px;
+ background:var(--aq-300);color:var(--aq-700);display:flex;align-items:center;justify-content:center;
+ box-shadow:0 6px 16px rgba(18,163,194,.34);border:3px solid #fff}
+.badge{position:absolute;top:-3px;right:50%;margin-right:-19px;background:var(--err);color:#fff;
+ font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:99px;
+ display:flex;align-items:center;justify-content:center;padding:0 4px;font-style:normal}
+
+/* 지도 */
+.mapwrap{position:absolute;inset:0;background:
+ radial-gradient(120% 90% at 50% 12%,#FBFEFF,var(--aq-50) 75%)}
+.kmap{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);width:238px;height:336px}
+.kmap.up{top:33%}
+.kland{fill:#fff;stroke:var(--n300);stroke-width:1.5;stroke-linejoin:round}
+.khl{fill:var(--aq-200);stroke:var(--aq-500);stroke-width:2}
+.kriver{fill:none;stroke:var(--aq-300);stroke-width:1.5;opacity:.8;stroke-linecap:round}
+.kbound{fill:none;stroke:var(--n200);stroke-width:1.1;stroke-dasharray:3 2.5}
+.kpin{fill:var(--aq-300);stroke:#fff;stroke-width:1.6}
+.kpin-lg{fill:var(--aq-500)}
+.klabel{font-size:8.5px;font-weight:800;fill:var(--aq-700);text-anchor:middle;
+ paint-order:stroke;stroke:#fff;stroke-width:2.4}
+.kbub{fill:var(--pink);stroke:var(--pink-tx);stroke-width:1.1}
+.kbub-halo{fill:var(--pink-tx)}
+.kpulse{fill:none;stroke:var(--pink-tx);stroke-width:1.6;opacity:.5;stroke-dasharray:4 4}
+.kshot.g0,.kshot.g1,.kshot.g2,.kshot.g3{fill:var(--n50);stroke:var(--n300);stroke-width:1.1}
+.kshot-halo{fill:#fff;stroke:none}
+.kshot-in{fill:none;stroke:var(--n300);stroke-width:.9;opacity:.85}
+.kshot-tail{fill:var(--n300);stroke:none}
+.maptop{position:absolute;top:12px;left:12px;right:12px;display:flex;gap:7px;z-index:2}
+.mapchip{background:#fff;border:1px solid var(--n200);border-radius:999px;height:34px;
+ display:flex;align-items:center;gap:5px;padding:0 12px;font-size:12px;font-weight:700;
+ color:var(--n600);box-shadow:var(--sh1)}
+.mapchip.on{background:var(--aq-300);border-color:var(--aq-300);color:var(--aq-700)}
+.mapbot{position:absolute;bottom:12px;left:12px;right:12px;background:#fff;border-radius:14px;
+ padding:13px 14px;box-shadow:var(--sh2);z-index:2}
+.livedot{width:7px;height:7px;border-radius:99px;background:var(--pink-tx);
+ box-shadow:0 0 0 4px var(--pink-t);display:inline-block}
+.fallback{position:absolute;top:56px;left:12px;background:var(--pear);color:var(--pear-on);
+ font-size:10.5px;font-weight:700;padding:5px 10px;border-radius:999px;z-index:2}
+
+/* 공통 요소 */
+.h2{font-size:19px;font-weight:700}
+.title{font-size:16px;font-weight:700}
+.body15{font-size:15px}
+.bs{font-size:15px;font-weight:700}
+.cap{font-size:13px;color:var(--n500)}
+.lab{font-size:12px;font-weight:700}
+.muted{color:var(--n500)}
+.btn{height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+ gap:7px;font-size:15px;font-weight:700;background:var(--aq-300);color:var(--aq-700)}
+.btn.dark{background:var(--n800);color:#fff}
+.btn.ghost{background:#fff;border:1.5px solid var(--n200);color:var(--n700)}
+.btn.s{height:44px;font-size:14px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;font-weight:700;color:var(--n600);margin-bottom:6px}
+.input{height:48px;border:1.5px solid var(--n200);border-radius:12px;background:var(--n50);
+ display:flex;align-items:center;padding:0 13px;font-size:14px;color:var(--n400)}
+.searchbar{height:44px;border-radius:12px;background:var(--n100);display:flex;align-items:center;
+ gap:8px;padding:0 13px;color:var(--n400);font-size:14px}
+.chips{display:flex;gap:7px;flex-wrap:wrap}
+.chip{height:34px;border-radius:999px;display:flex;align-items:center;gap:5px;padding:0 13px;white-space:nowrap;
+ font-size:12.5px;font-weight:700;background:var(--n100);color:var(--n600)}
+.chip.on{background:var(--aq-300);color:var(--aq-700)}
+.chip.auto{background:var(--mint-t);color:var(--mint-tx);border:1px dashed var(--mint)}
+.chip.add{background:#fff;border:1.5px dashed var(--n300);color:var(--n500)}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--n100);padding:0 16px;background:#fff}
+.tabs div{padding:12px 14px;font-size:14px;font-weight:700;color:var(--n400);position:relative}
+.tabs div.on{color:var(--aq-700)}
+.tabs div.on:after{content:"";position:absolute;left:10px;right:10px;bottom:-1px;height:2.5px;
+ background:var(--aq-500);border-radius:9px}
+/* 사진 자리는 회색 X 처리 — 실제 사진 색이 목업 배색을 흐리지 않게 한다 */
+.ph-img{position:relative;overflow:hidden;border-radius:14px;background:var(--n50);
+ border:1px solid var(--n200);display:flex;align-items:flex-end;padding:8px;
+ font-size:10px;font-weight:700;color:var(--n400)}
+.ph-img:before,.ph-img:after{content:"";position:absolute;inset:0;pointer-events:none;
+ background:linear-gradient(to bottom right,transparent calc(50% - .6px),
+   var(--n200) 50%,transparent calc(50% + .6px))}
+.ph-img:after{background:linear-gradient(to bottom left,transparent calc(50% - .6px),
+   var(--n200) 50%,transparent calc(50% + .6px))}
+.ph-img.b,.ph-img.p,.ph-img.v,.ph-img.y,.ph-img.g{background:var(--n50);color:var(--n400)}
+.ph-img.solid:before,.ph-img.solid:after{display:none}
+.tier{font-size:10px;font-weight:700;padding:3px 8px;border-radius:999px}
+.t-on{background:var(--mint);color:var(--mint-on)}
+.t-loc{background:var(--aq-200);color:var(--aq-700)}
+.t-no{background:var(--n200);color:var(--n600)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.mason{columns:2;column-gap:8px}
+.mason.c3{columns:3;column-gap:6px}
+.mason>div{margin-bottom:8px;break-inside:avoid;display:inline-block;width:100%}
+.card{border:1px solid var(--n100);border-radius:14px;padding:12px;box-shadow:var(--sh1)}
+.rowb{display:flex;align-items:center;gap:10px}
+.av{width:38px;height:38px;border-radius:999px;background:var(--aq-200);flex:none;
+ display:flex;align-items:center;justify-content:center;color:var(--aq-700);font-size:13px;font-weight:800}
+.av.lg{width:66px;height:66px;font-size:20px}
+.stat{flex:1;text-align:center}
+.stat b{display:block;font-size:17px;font-weight:800}
+.stat span{font-size:11px;color:var(--n500)}
+.gradepill{display:inline-flex;align-items:center;gap:5px;background:var(--pear);color:var(--pear-on);
+ font-size:11px;font-weight:800;padding:4px 10px;border-radius:999px}
+.sns{display:flex;gap:6px;margin-top:9px}
+.sns span{display:flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:var(--aq-600);
+ background:var(--aq-100);padding:5px 9px;border-radius:999px}
+.ev{display:flex;gap:11px;padding:11px 0;border-bottom:1px solid var(--n100)}
+.evimg{width:78px;height:78px;border-radius:12px;flex:none}
+.evbadge{font-size:10px;font-weight:800;padding:3px 8px;border-radius:999px;
+ background:var(--pink);color:var(--pink-on)}
+.evbadge.soon{background:var(--aq-200);color:var(--aq-700)}
+.notif{display:flex;gap:10px;padding:12px 0;border-bottom:1px solid var(--n100)}
+.notif.un{background:var(--aq-50);margin:0 -16px;padding:12px 16px}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:26px 26px 0 0;
+ box-shadow:0 -8px 30px rgba(16,39,48,.16);padding:18px 16px 20px;z-index:4}
+.grab{width:38px;height:4px;border-radius:9px;background:var(--n200);margin:0 auto 14px}
+.place{display:flex;align-items:center;gap:10px;padding:11px 12px;border:1.5px solid var(--n200);
+ border-radius:12px;margin-bottom:8px}
+.place.on{border-color:var(--aq-400);background:var(--aq-50)}
+.dist{font-size:11px;font-weight:800;color:var(--aq-600);margin-left:auto}
+.ok{width:20px;height:20px;border-radius:99px;background:var(--mint);color:var(--mint-on);
+ display:flex;align-items:center;justify-content:center;flex:none}
+.legend{display:flex;gap:18px;flex-wrap:wrap;background:#fff;border-radius:14px;padding:16px 18px;
+ box-shadow:var(--sh1);margin:6px 0 26px}
+.legend div{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--n600)}
+.sw{width:22px;height:22px;border-radius:7px;border:1px solid rgba(16,39,48,.08)}
+.ratio{position:absolute;top:8px;right:8px;background:rgba(16,39,48,.62);color:#fff;
+ font-size:9px;font-weight:800;padding:2px 6px;border-radius:6px}
+.vbadge{position:absolute;top:8px;left:8px;background:rgba(16,39,48,.62);color:#fff;
+ font-size:9px;font-weight:800;padding:3px 7px;border-radius:6px;display:flex;gap:3px;align-items:center}
+.rel{position:relative}
+.scrollfade{position:absolute;bottom:0;left:0;right:0;height:34px;
+ background:linear-gradient(transparent,#fff);pointer-events:none;z-index:2}
+.tmark{position:absolute;top:7px;left:7px;z-index:2}
+.tmark .tier{box-shadow:0 1px 3px rgba(16,39,48,.14)}
+</style></head>
+<body><div class="wrap"><div class="colorbar"><i style="background:#7ADDF2"></i><i style="background:#BFE8C8"></i><i style="background:#F2C7DB"></i><i style="background:#CBB7F5"></i><i style="background:#F3EEB6"></i></div>
+<div class="hero">
+  <h1>모바일 목업 · 요구사항 v3 기준</h1>
+  <p><b>랜딩 = 지도.</b> 앱을 켜면 바로 실시간 지도가 뜨고, 로그인은 <b>게시글을 올리려 할 때</b> 비로소 필요합니다.<br>내비게이션 5탭(홈·커뮤니티·업로드·이벤트·마이) · 지도 3레이어 · 자동 태그 · 이벤트 · 인기 지수<br>
+  디자인 시스템 <b>연꽃 파스텔</b>(확정)의 팔레트·타이포·라운드·간격 토큰을 그대로 적용했습니다.</p>
+  <div class="chips">
+    <span>화면 19개 · 390×844</span><span>요구사항 201개 반영</span><span>라이트 단일 테마</span>
+    <span>탭바 58 · 상단바 52 · 버튼 52/44</span><span>라운드 btn12 · card14 · sheet26</span><span>사진 자리는 회색 처리</span><span>게시글은 전부 가변 높이 격자</span>
+  </div>
+</div>
+<div class="legend">
+  <div><i class="sw" style="background:#7ADDF2"></i>Crystal Lagoon · 액션</div>
+  <div><i class="sw" style="background:#BFE8C8"></i>Mint Bloom · 인증</div>
+  <div><i class="sw" style="background:#F2C7DB"></i>Lotus Pink · 좋아요</div>
+  <div><i class="sw" style="background:#CBB7F5"></i>Water Lily · K-컬쳐</div>
+  <div><i class="sw" style="background:#F3EEB6"></i>Perfect Pear · 랭킹</div>
+  <div><i class="sw" style="background:#A32A2A"></i>Deep Red · 오류</div>
+  <div><i class="sw" style="background:#F5FBFC;border:1px solid #D7EBEF"></i>사진 자리 · 회색 X 처리</div>
+</div>
+<p class="secsub" style="margin:-18px 0 26px">
+  실시간·진행중 상태 표시에는 <b>Lotus Pink</b>를 재사용했습니다. 팔레트를 5색에서 늘리지 않기로 한 결정을 지키기 위해서입니다.
+</p><h2 class="sec">1. 홈 (지도) — 랜딩 화면</h2><p class="secsub"><b>앱을 켜면 바로 이 화면입니다.</b> 로그인 화면은 진입 경로에 없고, 비로그인 상태로 지도·검색·게시물을 다 볼 수 있습니다. 시도 영역이 버튼이며 얇고 긴 지역을 위해 핀을 함께 놓았습니다. 레이어는 지역 / 트래픽 / 인기 사진 세 가지입니다.</p><div class="row"><figure class="ph"><div class="frame"><div class="screen"><div class="statusbar"><span>9:41</span><span style="display:flex;gap:4px;align-items:center"><svg width="13" height="9" viewBox="0 0 13 9" fill="currentColor"><rect x="0" y="6" width="2" height="3" rx=".5"/><rect x="3.5" y="4" width="2" height="5" rx=".5"/><rect x="7" y="2" width="2" height="7" rx=".5"/><rect x="10.5" y="0" width="2" height="9" rx=".5"/></svg><i></i></span></div>
+<header class="topbar"><span class="tb-sp"></span><h1></h1><span class="tb-right"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15V10a6 6 0 1 0-12 0v5l-2 3h16z"/><path d="M10 21h4"/></svg></span></header>
+<div class="body"><div class="mapwrap">
+  <div class="maptop">
+    <div class="mapchip on"><svg class="ic" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.4 7-12A7 7 0 0 0 5 10c0 5.6 7 12 7 12z"/><circle cx="12" cy="10" r="2.6"/></svg>지역</div>
+    <div class="mapchip"><svg class="ic" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 8l9 5 9-5z"/><path d="M3 13l9 5 9-5"/></svg>트래픽</div>
+    <div class="mapchip"><svg class="ic" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="M3 17l5-4 4 3 3-2 6 5"/></svg>인기 사진</div>
+  </div>
+  <svg class="kmap " viewBox="0 0 240 340" xmlns="http://www.w3.org/2000/svg"><path d="M48.9,47.7 L65.1,41.8 L78.3,32.8 L95.5,22.7 L115.1,23.9 L129.8,20.9 L139.6,14.9 L146.9,6.0 L155.3,29.8 L161.6,44.7 L171.4,56.7 L178.8,71.6 L185.7,83.5 L191.5,98.4 L195.9,113.3 L194.5,128.2 L193.5,143.2 L201.8,156.3 L197.4,164.0 L194.5,178.9 L191.5,190.9 L183.7,202.8 L177.8,214.7 L169.0,220.7 L159.2,229.7 L151.9,237.4 L145.5,229.7 L129.8,223.7 L121.0,230.8 L114.1,237.4 L109.2,244.6 L102.8,237.4 L90.6,253.5 L80.8,245.8 L71.0,257.7 L62.2,261.3 L53.8,255.3 L46.5,244.6 L41.6,232.6 L45.5,220.7 L47.5,208.8 L53.8,195.7 L50.4,183.7 L57.3,173.0 L61.2,162.2 L53.8,155.1 L51.4,143.2 L42.6,132.4 L39.1,119.3 L47.5,110.4 L56.3,104.4 L62.2,95.4 L56.3,84.7 L61.2,74.6 L52.4,65.6 L50.4,54.9 Z" class="kland"/><ellipse cx="52.9" cy="317.3" rx="20.6" ry="10.7" class="kland"/><path d="M61.2,65.6 L80.8,68.6 L100.4,68.6 L120.0,56.7 L139.6,53.7" class="kriver"/><path d="M112.6,161.1 L97.9,143.2 L83.2,134.2 L68.5,149.1 L61.2,161.1" class="kriver"/><path d="M80.8,208.8 L68.5,217.7 L53.8,226.7" class="kriver"/><path d="M161.6,125.3 L151.9,155.1 L146.9,184.9 L159.2,205.8 L171.4,214.7" class="kriver"/><path d="M93.0,23.9 L102.8,44.7 L115.1,58.5 L129.8,68.6 L142.0,76.4" class="kbound"/><path d="M53.8,101.4 L73.4,102.6 L93.0,104.4 L110.2,100.2 L127.4,98.4" class="kbound"/><path d="M75.9,102.6 L83.2,125.3 L78.3,144.4 L73.4,158.1" class="kbound"/><path d="M51.4,159.9 L75.9,162.2 L97.9,158.1 L120.0,155.1 L139.6,146.1" class="kbound"/><path d="M41.6,199.8 L63.6,202.8 L85.7,204.0 L105.3,205.8" class="kbound"/><path d="M105.3,205.8 L112.6,184.9 L120.0,158.1" class="kbound"/><path d="M120.0,183.7 L139.6,187.9 L164.1,184.9 L186.1,183.7" class="kbound"/><circle cx="74.9" cy="67.4" r="7" class="kpin kpin-lg"/><text x="74.9" y="55.400000000000006" class="klabel">서울</text><circle cx="61.2" cy="74.0" r="4.5" class="kpin"/><circle cx="85.7" cy="83.5" r="7" class="kpin kpin-lg"/><text x="85.7" y="100.5" class="klabel">경기</text><circle cx="134.7" cy="53.7" r="7" class="kpin kpin-lg"/><text x="134.7" y="70.7" class="klabel">강원</text><circle cx="112.6" cy="116.3" r="7" class="kpin kpin-lg"/><text x="112.6" y="133.3" class="klabel">충북</text><circle cx="71.0" cy="128.2" r="7" class="kpin kpin-lg"/><text x="71.0" y="145.2" class="klabel">충남</text><circle cx="90.1" cy="132.4" r="4.5" class="kpin"/><circle cx="94.5" cy="140.2" r="4.5" class="kpin"/><circle cx="83.2" cy="177.8" r="7" class="kpin kpin-lg"/><text x="83.2" y="194.8" class="klabel">전북</text><circle cx="71.0" cy="226.7" r="7" class="kpin kpin-lg"/><text x="71.0" y="243.7" class="klabel">전남</text><circle cx="68.5" cy="211.2" r="4.5" class="kpin"/><circle cx="159.2" cy="137.2" r="7" class="kpin kpin-lg"/><text x="159.2" y="154.2" class="klabel">경북</text><circle cx="154.3" cy="168.8" r="4.5" class="kpin"/><circle cx="137.1" cy="202.8" r="7" class="kpin kpin-lg"/><text x="137.1" y="219.8" class="klabel">경남</text><circle cx="175.4" cy="210.0" r="4.5" class="kpin"/><circle cx="189.1" cy="188.5" r="4.5" class="kpin"/><circle cx="52.9" cy="316.1" r="7" class="kpin kpin-lg"/><text x="52.9" y="333.1" class="klabel">제주</text></svg>
+  <div class="mapbot">
+    <div class="rowb" style="justify-content:space-between">
+      <div><div class="bs">지역을 선택해보세요</div>
+        <p class="cap" style="font-size:12px;margin-top:3px">17개 시도 · 오늘 1,284장</p></div>
+      <svg class="ic" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
+  </div>
+</div></div>
+<nav class="tabbar"><div class="tab on"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg><span>홈</span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg><span>커뮤니티</span></div><div class="tab tab-fab"><span class="fab"><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg><span>이벤트</span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg><i class="badge">3</i><span>마이</span></div></nav></div></div><figcaption>1-1 기본 레이어 (지역) ★ 첫 화면</figcaption><p class="pnote"><b>앱 실행 시 이 화면</b>. 로그인 없이 바로 보입니다. 영역 + <b>핀 병행</b>으로 충청북도처럼 얇은 지역도 누를 수 있습니다.</p></figure><figure class="ph"><div class="frame"><div class="screen"><div class="statusbar"><span>9:41</span><span style="display:flex;gap:4px;align-items:center"><svg width="13" height="9" viewBox="0 0 13 9" fill="currentColor"><rect x="0" y="6" width="2" height="3" rx=".5"/><rect x="3.5" y="4" width="2" height="5" rx=".5"/><rect x="7" y="2" width="2" height="7" rx=".5"/><rect x="10.5" y="0" width="2" height="9" rx=".5"/></svg><i></i></span></div>
+<header class="topbar"><span class="tb-sp"></span><h1></h1><span class="tb-right"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15V10a6 6 0 1 0-12 0v5l-2 3h16z"/><path d="M10 21h4"/></svg></span></header>
+<div class="body"><div class="mapwrap">
+  <div class="maptop">
+    <div class="mapchip"><svg class="ic" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.4 7-12A7 7 0 0 0 5 10c0 5.6 7 12 7 12z"/><circle cx="12" cy="10" r="2.6"/></svg>지역</div>
+    <div class="mapchip on"><svg class="ic" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 8l9 5 9-5z"/><path d="M3 13l9 5 9-5"/></svg>트래픽</div>
+    <div class="mapchip"><svg class="ic" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="M3 17l5-4 4 3 3-2 6 5"/></svg>인기 사진</div>
+  </div>
+  <div class="fallback">최근 24시간 기준</div>
+  <svg class="kmap " viewBox="0 0 240 340" xmlns="http://www.w3.org/2000/svg"><path d="M48.9,47.7 L65.1,41.8 L78.3,32.8 L95.5,22.7 L115.1,23.9 L129.8,20.9 L139.6,14.9 L146.9,6.0 L155.3,29.8 L161.6,44.7 L171.4,56.7 L178.8,71.6 L185.7,83.5 L191.5,98.4 L195.9,113.3 L194.5,128.2 L193.5,143.2 L201.8,156.3 L197.4,164.0 L194.5,178.9 L191.5,190.9 L183.7,202.8 L177.8,214.7 L169.0,220.7 L159.2,229.7 L151.9,237.4 L145.5,229.7 L129.8,223.7 L121.0,230.8 L114.1,237.4 L109.2,244.6 L102.8,237.4 L90.6,253.5 L80.8,245.8 L71.0,257.7 L62.2,261.3 L53.8,255.3 L46.5,244.6 L41.6,232.6 L45.5,220.7 L47.5,208.8 L53.8,195.7 L50.4,183.7 L57.3,173.0 L61.2,162.2 L53.8,155.1 L51.4,143.2 L42.6,132.4 L39.1,119.3 L47.5,110.4 L56.3,104.4 L62.2,95.4 L56.3,84.7 L61.2,74.6 L52.4,65.6 L50.4,54.9 Z" class="kland"/><ellipse cx="52.9" cy="317.3" rx="20.6" ry="10.7" class="kland"/><path d="M61.2,65.6 L80.8,68.6 L100.4,68.6 L120.0,56.7 L139.6,53.7" class="kriver"/><path d="M112.6,161.1 L97.9,143.2 L83.2,134.2 L68.5,149.1 L61.2,161.1" class="kriver"/><path d="M80.8,208.8 L68.5,217.7 L53.8,226.7" class="kriver"/><path d="M161.6,125.3 L151.9,155.1 L146.9,184.9 L159.2,205.8 L171.4,214.7" class="kriver"/><path d="M93.0,23.9 L102.8,44.7 L115.1,58.5 L129.8,68.6 L142.0,76.4" class="kbound"/><path d="M53.8,101.4 L73.4,102.6 L93.0,104.4 L110.2,100.2 L127.4,98.4" class="kbound"/><path d="M75.9,102.6 L83.2,125.3 L78.3,144.4 L73.4,158.1" class="kbound"/><path d="M51.4,159.9 L75.9,162.2 L97.9,158.1 L120.0,155.1 L139.6,146.1" class="kbound"/><path d="M41.6,199.8 L63.6,202.8 L85.7,204.0 L105.3,205.8" class="kbound"/><path d="M105.3,205.8 L112.6,184.9 L120.0,158.1" class="kbound"/><path d="M120.0,183.7 L139.6,187.9 L164.1,184.9 L186.1,183.7" class="kbound"/><circle cx="74.9" cy="67.4" r="24" class="kbub-halo" style="opacity:0.24"/><circle cx="74.9" cy="67.4" r="17" class="kbub" style="opacity:0.92"/><circle cx="85.7" cy="83.5" r="17" class="kbub-halo" style="opacity:0.14"/><circle cx="85.7" cy="83.5" r="10" class="kbub" style="opacity:0.55"/><circle cx="134.7" cy="53.7" r="15" class="kbub-halo" style="opacity:0.11"/><circle cx="134.7" cy="53.7" r="8" class="kbub" style="opacity:0.42"/><circle cx="112.6" cy="116.3" r="14" class="kbub-halo" style="opacity:0.10"/><circle cx="112.6" cy="116.3" r="7" class="kbub" style="opacity:0.38"/><circle cx="83.2" cy="177.8" r="27" class="kbub-halo" style="opacity:0.26"/><circle cx="83.2" cy="177.8" r="20" class="kbub" style="opacity:1.00"/><circle cx="71.0" cy="226.7" r="17" class="kbub-halo" style="opacity:0.13"/><circle cx="71.0" cy="226.7" r="10" class="kbub" style="opacity:0.50"/><circle cx="159.2" cy="137.2" r="14" class="kbub-halo" style="opacity:0.09"/><circle cx="159.2" cy="137.2" r="7" class="kbub" style="opacity:0.34"/><circle cx="137.1" cy="202.8" r="19" class="kbub-halo" style="opacity:0.17"/><circle cx="137.1" cy="202.8" r="12" class="kbub" style="opacity:0.66"/><circle cx="175.4" cy="210.0" r="21" class="kbub-halo" style="opacity:0.20"/><circle cx="175.4" cy="210.0" r="14" class="kbub" style="opacity:0.78"/><circle cx="52.9" cy="316.1" r="18" class="kbub-halo" style="opacity:0.16"/><circle cx="52.9" cy="316.1" r="11" class="kbub" style="opacity:0.60"/><circle cx="83.2" cy="177.8" r="27" class="kpulse"/></svg>
+  <div class="mapbot">
+    <div class="rowb" style="gap:8px;margin-bottom:9px">
+      <span class="livedot"></span><span class="lab" style="color:var(--pink-tx)">실시간</span>
+      <span class="cap" style="font-size:11.5px;margin-left:auto">1분마다 갱신</span></div>
+    <div class="rowb"><div style="flex:1"><div class="bs">전주 한옥마을 근처</div>
+      <p class="cap" style="font-size:12px;margin-top:2px">지금 24명이 사진을 올리고 있어요</p></div>
+      <svg class="ic" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
+  </div>
+</div></div>
+<nav class="tabbar"><div class="tab on"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg><span>홈</span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg><span>커뮤니티</span></div><div class="tab tab-fab"><span class="fab"><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg><span>이벤트</span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg><i class="badge">3</i><span>마이</span></div></nav></div></div><figcaption>1-2 트래픽 레이어</figcaption><p class="pnote">원 크기 = 밀집도. 데이터가 적으면 <b>24시간 폴백</b> 라벨이 붙습니다.</p></figure><figure class="ph"><div class="frame"><div class="screen"><div class="statusbar"><span>9:41</span><span style="display:flex;gap:4px;align-items:center"><svg width="13" height="9" viewBox="0 0 13 9" fill="currentColor"><rect x="0" y="6" width="2" height="3" rx=".5"/><rect x="3.5" y="4" width="2" height="5" rx=".5"/><rect x="7" y="2" width="2" height="7" rx=".5"/><rect x="10.5" y="0" width="2" height="9" rx=".5"/></svg><i></i></span></div>
+<header class="topbar"><span class="tb-sp"></span><h1></h1><span class="tb-right"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15V10a6 6 0 1 0-12 0v5l-2 3h16z"/><path d="M10 21h4"/></svg></span></header>
+<div class="body"><div class="mapwrap">
+  <div class="maptop">
+    <div class="mapchip"><svg class="ic" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.4 7-12A7 7 0 0 0 5 10c0 5.6 7 12 7 12z"/><circle cx="12" cy="10" r="2.6"/></svg>지역</div>
+    <div class="mapchip"><svg class="ic" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 8l9 5 9-5z"/><path d="M3 13l9 5 9-5"/></svg>트래픽</div>
+    <div class="mapchip on"><svg class="ic" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="M3 17l5-4 4 3 3-2 6 5"/></svg>인기 사진</div>
+  </div>
+  <svg class="kmap " viewBox="0 0 240 340" xmlns="http://www.w3.org/2000/svg"><path d="M48.9,47.7 L65.1,41.8 L78.3,32.8 L95.5,22.7 L115.1,23.9 L129.8,20.9 L139.6,14.9 L146.9,6.0 L155.3,29.8 L161.6,44.7 L171.4,56.7 L178.8,71.6 L185.7,83.5 L191.5,98.4 L195.9,113.3 L194.5,128.2 L193.5,143.2 L201.8,156.3 L197.4,164.0 L194.5,178.9 L191.5,190.9 L183.7,202.8 L177.8,214.7 L169.0,220.7 L159.2,229.7 L151.9,237.4 L145.5,229.7 L129.8,223.7 L121.0,230.8 L114.1,237.4 L109.2,244.6 L102.8,237.4 L90.6,253.5 L80.8,245.8 L71.0,257.7 L62.2,261.3 L53.8,255.3 L46.5,244.6 L41.6,232.6 L45.5,220.7 L47.5,208.8 L53.8,195.7 L50.4,183.7 L57.3,173.0 L61.2,162.2 L53.8,155.1 L51.4,143.2 L42.6,132.4 L39.1,119.3 L47.5,110.4 L56.3,104.4 L62.2,95.4 L56.3,84.7 L61.2,74.6 L52.4,65.6 L50.4,54.9 Z" class="kland"/><ellipse cx="52.9" cy="317.3" rx="20.6" ry="10.7" class="kland"/><path d="M61.2,65.6 L80.8,68.6 L100.4,68.6 L120.0,56.7 L139.6,53.7" class="kriver"/><path d="M112.6,161.1 L97.9,143.2 L83.2,134.2 L68.5,149.1 L61.2,161.1" class="kriver"/><path d="M80.8,208.8 L68.5,217.7 L53.8,226.7" class="kriver"/><path d="M161.6,125.3 L151.9,155.1 L146.9,184.9 L159.2,205.8 L171.4,214.7" class="kriver"/><path d="M93.0,23.9 L102.8,44.7 L115.1,58.5 L129.8,68.6 L142.0,76.4" class="kbound"/><path d="M53.8,101.4 L73.4,102.6 L93.0,104.4 L110.2,100.2 L127.4,98.4" class="kbound"/><path d="M75.9,102.6 L83.2,125.3 L78.3,144.4 L73.4,158.1" class="kbound"/><path d="M51.4,159.9 L75.9,162.2 L97.9,158.1 L120.0,155.1 L139.6,146.1" class="kbound"/><path d="M41.6,199.8 L63.6,202.8 L85.7,204.0 L105.3,205.8" class="kbound"/><path d="M105.3,205.8 L112.6,184.9 L120.0,158.1" class="kbound"/><path d="M120.0,183.7 L139.6,187.9 L164.1,184.9 L186.1,183.7" class="kbound"/><g transform="translate(57.900000000000006,27.400000000000006)"><rect x="-1.6" y="-1.6" width="37.2" height="37.2" rx="8.5" class="kshot-halo"/><rect x="0" y="0" width="34" height="34" rx="7" class="kshot g0"/><path d="M2,2 L32,32 M32,2 L2,32" class="kshot-in"/><path d="M12.0,35 L17.0,42 L22.0,35 Z" class="kshot-tail"/></g><g transform="translate(73.2,52.5)"><rect x="-1.6" y="-1.6" width="28.2" height="28.2" rx="8.5" class="kshot-halo"/><rect x="0" y="0" width="25" height="25" rx="7" class="kshot g1"/><path d="M2,2 L23,23 M23,2 L2,23" class="kshot-in"/><path d="M7.5,26 L12.5,33 L17.5,26 Z" class="kshot-tail"/></g><g transform="translate(66.2,137.8)"><rect x="-1.6" y="-1.6" width="37.2" height="37.2" rx="8.5" class="kshot-halo"/><rect x="0" y="0" width="34" height="34" rx="7" class="kshot g2"/><path d="M2,2 L32,32 M32,2 L2,32" class="kshot-in"/><path d="M12.0,35 L17.0,42 L22.0,35 Z" class="kshot-tail"/></g><g transform="translate(124.6,171.8)"><rect x="-1.6" y="-1.6" width="28.2" height="28.2" rx="8.5" class="kshot-halo"/><rect x="0" y="0" width="25" height="25" rx="7" class="kshot g3"/><path d="M2,2 L23,23 M23,2 L2,23" class="kshot-in"/><path d="M7.5,26 L12.5,33 L17.5,26 Z" class="kshot-tail"/></g><g transform="translate(162.9,179.0)"><rect x="-1.6" y="-1.6" width="28.2" height="28.2" rx="8.5" class="kshot-halo"/><rect x="0" y="0" width="25" height="25" rx="7" class="kshot g0"/><path d="M2,2 L23,23 M23,2 L2,23" class="kshot-in"/><path d="M7.5,26 L12.5,33 L17.5,26 Z" class="kshot-tail"/></g><g transform="translate(40.4,285.1)"><rect x="-1.6" y="-1.6" width="28.2" height="28.2" rx="8.5" class="kshot-halo"/><rect x="0" y="0" width="25" height="25" rx="7" class="kshot g1"/><path d="M2,2 L23,23 M23,2 L2,23" class="kshot-in"/><path d="M7.5,26 L12.5,33 L17.5,26 Z" class="kshot-tail"/></g><g transform="translate(146.7,106.19999999999999)"><rect x="-1.6" y="-1.6" width="28.2" height="28.2" rx="8.5" class="kshot-halo"/><rect x="0" y="0" width="25" height="25" rx="7" class="kshot g2"/><path d="M2,2 L23,23 M23,2 L2,23" class="kshot-in"/><path d="M7.5,26 L12.5,33 L17.5,26 Z" class="kshot-tail"/></g></svg>
+  <div class="mapbot">
+    <div class="rowb" style="gap:10px">
+      <div class="ph-img" style="width:52px;height:52px;border-radius:11px"></div>
+      <div style="flex:1"><div class="bs">전주 한옥마을</div>
+        <div class="rowb" style="gap:6px;margin-top:4px"><span class="tier t-on">현장 인증</span>
+          <span class="cap" style="font-size:11.5px">♥ 312</span></div></div>
+      <svg class="ic" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
+  </div>
+</div></div>
+<nav class="tabbar"><div class="tab on"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg><span>홈</span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg><span>커뮤니티</span></div><div class="tab tab-fab"><span class="fab"><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg><span>이벤트</span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg><i class="badge">3</i><span>마이</span></div></nav></div></div><figcaption>1-3 인기 사진 레이어</figcaption><p class="pnote">구역 대표 사진을 썸네일 마커로. 서버가 <b>썸네일 URL을 미리 저장</b>합니다.</p></figure><figure class="ph"><div class="frame"><div class="screen"><div class="statusbar"><span>9:41</span><span style="display:flex;gap:4px;align-items:center"><svg width="13" height="9" viewBox="0 0 13 9" fill="currentColor"><rect x="0" y="6" width="2" height="3" rx=".5"/><rect x="3.5" y="4" width="2" height="5" rx=".5"/><rect x="7" y="2" width="2" height="7" rx=".5"/><rect x="10.5" y="0" width="2" height="9" rx=".5"/></svg><i></i></span></div>
+<header class="topbar"><span class="tb-sp"></span><h1></h1><span class="tb-right"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15V10a6 6 0 1 0-12 0v5l-2 3h16z"/><path d="M10 21h4"/></svg></span></header>
+<div class="body"><div class="mapwrap">
+  <div class="maptop">
+    <div class="mapchip on"><svg class="ic" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.4 7-12A7 7 0 0 0 5 10c0 5.6 7 12 7 12z"/><circle cx="12" cy="10" r="2.6"/></svg>지역</div>
+    <div class="mapchip"><svg class="ic" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 8l9 5 9-5z"/><path d="M3 13l9 5 9-5"/></svg>트래픽</div>
+    <div class="mapchip"><svg class="ic" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="M3 17l5-4 4 3 3-2 6 5"/></svg>인기 사진</div>
+  </div>
+  <svg class="kmap up" viewBox="0 0 240 340" xmlns="http://www.w3.org/2000/svg"><path d="M48.9,47.7 L65.1,41.8 L78.3,32.8 L95.5,22.7 L115.1,23.9 L129.8,20.9 L139.6,14.9 L146.9,6.0 L155.3,29.8 L161.6,44.7 L171.4,56.7 L178.8,71.6 L185.7,83.5 L191.5,98.4 L195.9,113.3 L194.5,128.2 L193.5,143.2 L201.8,156.3 L197.4,164.0 L194.5,178.9 L191.5,190.9 L183.7,202.8 L177.8,214.7 L169.0,220.7 L159.2,229.7 L151.9,237.4 L145.5,229.7 L129.8,223.7 L121.0,230.8 L114.1,237.4 L109.2,244.6 L102.8,237.4 L90.6,253.5 L80.8,245.8 L71.0,257.7 L62.2,261.3 L53.8,255.3 L46.5,244.6 L41.6,232.6 L45.5,220.7 L47.5,208.8 L53.8,195.7 L50.4,183.7 L57.3,173.0 L61.2,162.2 L53.8,155.1 L51.4,143.2 L42.6,132.4 L39.1,119.3 L47.5,110.4 L56.3,104.4 L62.2,95.4 L56.3,84.7 L61.2,74.6 L52.4,65.6 L50.4,54.9 Z" class="kland"/><ellipse cx="52.9" cy="317.3" rx="20.6" ry="10.7" class="kland"/><path d="M51.4,159.9 L75.9,162.2 L97.9,158.1 L112.6,161.1 L105.3,205.8 L85.7,204.0 L63.6,202.8 L41.6,199.8 Z" class="khl"/><path d="M61.2,65.6 L80.8,68.6 L100.4,68.6 L120.0,56.7 L139.6,53.7" class="kriver"/><path d="M112.6,161.1 L97.9,143.2 L83.2,134.2 L68.5,149.1 L61.2,161.1" class="kriver"/><path d="M80.8,208.8 L68.5,217.7 L53.8,226.7" class="kriver"/><path d="M161.6,125.3 L151.9,155.1 L146.9,184.9 L159.2,205.8 L171.4,214.7" class="kriver"/><path d="M93.0,23.9 L102.8,44.7 L115.1,58.5 L129.8,68.6 L142.0,76.4" class="kbound"/><path d="M53.8,101.4 L73.4,102.6 L93.0,104.4 L110.2,100.2 L127.4,98.4" class="kbound"/><path d="M75.9,102.6 L83.2,125.3 L78.3,144.4 L73.4,158.1" class="kbound"/><path d="M51.4,159.9 L75.9,162.2 L97.9,158.1 L120.0,155.1 L139.6,146.1" class="kbound"/><path d="M41.6,199.8 L63.6,202.8 L85.7,204.0 L105.3,205.8" class="kbound"/><path d="M105.3,205.8 L112.6,184.9 L120.0,158.1" class="kbound"/><path d="M120.0,183.7 L139.6,187.9 L164.1,184.9 L186.1,183.7" class="kbound"/><circle cx="74.9" cy="67.4" r="7" class="kpin kpin-lg"/><text x="74.9" y="55.400000000000006" class="klabel">서울</text><circle cx="61.2" cy="74.0" r="4.5" class="kpin"/><circle cx="85.7" cy="83.5" r="7" class="kpin kpin-lg"/><text x="85.7" y="100.5" class="klabel">경기</text><circle cx="134.7" cy="53.7" r="7" class="kpin kpin-lg"/><text x="134.7" y="70.7" class="klabel">강원</text><circle cx="112.6" cy="116.3" r="7" class="kpin kpin-lg"/><text x="112.6" y="133.3" class="klabel">충북</text><circle cx="71.0" cy="128.2" r="7" class="kpin kpin-lg"/><text x="71.0" y="145.2" class="klabel">충남</text><circle cx="90.1" cy="132.4" r="4.5" class="kpin"/><circle cx="94.5" cy="140.2" r="4.5" class="kpin"/><circle cx="83.2" cy="177.8" r="7" class="kpin kpin-lg"/><text x="83.2" y="194.8" class="klabel">전북</text><circle cx="71.0" cy="226.7" r="7" class="kpin kpin-lg"/><text x="71.0" y="243.7" class="klabel">전남</text><circle cx="68.5" cy="211.2" r="4.5" class="kpin"/><circle cx="159.2" cy="137.2" r="7" class="kpin kpin-lg"/><text x="159.2" y="154.2" class="klabel">경북</text><circle cx="154.3" cy="168.8" r="4.5" class="kpin"/><circle cx="137.1" cy="202.8" r="7" class="kpin kpin-lg"/><text x="137.1" y="219.8" class="klabel">경남</text><circle cx="175.4" cy="210.0" r="4.5" class="kpin"/><circle cx="189.1" cy="188.5" r="4.5" class="kpin"/><circle cx="52.9" cy="316.1" r="7" class="kpin kpin-lg"/><text x="52.9" y="333.1" class="klabel">제주</text></svg>
+</div></div>
+<div class="sheet">
+  <div class="grab"></div>
+  <div class="rowb" style="margin-bottom:14px">
+    <div><div class="h2">전북특별자치도</div>
+      <p class="cap" style="font-size:12.5px;margin-top:3px">게시물 3,412 · 장소 1,204 · 기여자 869</p></div>
+    <div class="chip on" style="margin-left:auto">게시판</div></div>
+  <div class="grid3" style="margin-bottom:14px">
+    <div class="ph-img " style="aspect-ratio:1"></div><div class="ph-img b" style="aspect-ratio:1"></div><div class="ph-img y" style="aspect-ratio:1"></div>
+  </div>
+  <div class="btn s">전북 게시판 열기</div>
+</div>
+<nav class="tabbar"><div class="tab on"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg><span>홈</span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg><span>커뮤니티</span></div><div class="tab tab-fab"><span class="fab"><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg><span>이벤트</span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg><i class="badge">3</i><span>마이</span></div></nav></div></div><figcaption>1-4 지역 선택 시트</figcaption><p class="pnote">영역을 누르면 요약 시트 → 게시판 진입.</p></figure></div><h2 class="sec">2. 지역 게시판</h2><p class="secsub">홈 지도에서 지역을 눌러 진입합니다. 최신 / 인기순 / 태그별 3탭 구조입니다.</p><div class="row"><figure class="ph"><div class="frame"><div class="screen"><div class="statusbar"><span>9:41</span><span style="display:flex;gap:4px;align-items:center"><svg width="13" height="9" viewBox="0 0 13 9" fill="currentColor"><rect x="0" y="6" width="2" height="3" rx=".5"/><rect x="3.5" y="4" width="2" height="5" rx=".5"/><rect x="7" y="2" width="2" height="7" rx=".5"/><rect x="10.5" y="0" width="2" height="9" rx=".5"/></svg><i></i></span></div>
+<header class="topbar"><span class="tb-ic"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></span><h1>전북특별자치도</h1><span class="tb-right"><svg class="ic" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg></span></header>
+<div class="tabs"><div class="on">최신</div><div>인기순</div><div>태그별</div></div>
+<div class="body rel">
+  <div class="pad" style="padding-bottom:0">
+    <div class="mason"><div><div class="rel"><div class="ph-img " style="aspect-ratio:0.78"></div><span class="tmark"><span class="tier t-on">현장 인증</span></span></div><div style="padding:5px 2px 0"><div class="lab" style="font-size:12px">전주 한옥마을</div><span class="cap" style="font-size:10.5px">♥ 128 · ♡ 24</span></div></div><div><div class="rel"><div class="ph-img " style="aspect-ratio:1.35"></div></div><div style="padding:5px 2px 0"><div class="lab" style="font-size:12px">임실 치즈테마파크</div><span class="cap" style="font-size:10.5px">♥ 86 · ♡ 7</span></div></div><div><div class="rel"><div class="ph-img " style="aspect-ratio:1.0"></div><span class="tmark"><span class="tier t-on">현장 인증</span></span></div><div style="padding:5px 2px 0"><div class="lab" style="font-size:12px">진안 홍삼축제</div><span class="cap" style="font-size:10.5px">♥ 212 · ♡ 19</span></div></div><div><div class="rel"><div class="ph-img " style="aspect-ratio:0.72"></div><span class="tmark"><span class="tier t-on">현장 인증</span></span></div><div style="padding:5px 2px 0"><div class="lab" style="font-size:12px">군산 철길마을</div><span class="cap" style="font-size:10.5px">♥ 54 · ♡ 3</span></div></div><div><div class="rel"><div class="ph-img " style="aspect-ratio:1.5"></div></div><div style="padding:5px 2px 0"><div class="lab" style="font-size:12px">남원 광한루</div><span class="cap" style="font-size:10.5px">♥ 98 · ♡ 11</span></div></div><div><div class="rel"><div class="ph-img " style="aspect-ratio:0.85"></div></div><div style="padding:5px 2px 0"><div class="lab" style="font-size:12px">변산 해넘이</div><span class="cap" style="font-size:10.5px">♥ 41 · ♡ 2</span></div></div><div><div class="rel"><div class="ph-img " style="aspect-ratio:1.0"></div><span class="tmark"><span class="tier t-on">현장 인증</span></span></div><div style="padding:5px 2px 0"><div class="lab" style="font-size:12px">마이산 탑사</div><span class="cap" style="font-size:10.5px">♥ 176 · ♡ 14</span></div></div><div><div class="rel"><div class="ph-img " style="aspect-ratio:0.66"></div></div><div style="padding:5px 2px 0"><div class="lab" style="font-size:12px">선유도 해변</div><span class="cap" style="font-size:10.5px">♥ 63 · ♡ 5</span></div></div></div>
+  </div>
+  <div class="scrollfade"></div>
+</div>
+<nav class="tabbar"><div class="tab on"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg><span>홈</span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg><span>커뮤니티</span></div><div class="tab tab-fab"><span class="fab"><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg><span>이벤트</span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg><span>마이</span></div></nav></div></div><figcaption>2-1 최신</figcaption><p class="pnote">사진 규격이 달라 <b>가변 높이 격자</b>. 서버가 대표 미디어 비율을 함께 줍니다.</p></figure><figure class="ph"><div class="frame"><div class="screen"><div class="statusbar"><span>9:41</span><span style="display:flex;gap:4px;align-items:center"><svg width="13" height="9" viewBox="0 0 13 9" fill="currentColor"><rect x="0" y="6" width="2" height="3" rx=".5"/><rect x="3.5" y="4" width="2" height="5" rx=".5"/><rect x="7" y="2" width="2" height="7" rx=".5"/><rect x="10.5" y="0" width="2" height="9" rx=".5"/></svg><i></i></span></div>
+<header class="topbar"><span class="tb-ic"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></span><h1>전북특별자치도</h1><span class="tb-right"></span></header>
+<div class="tabs"><div>최신</div><div class="on">인기순</div><div>태그별</div></div>
+<div class="body rel">
+  <div class="pad" style="padding-bottom:0">
+    <div class="searchbar" style="margin-bottom:12px"><svg class="ic" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg>이 지역에서 검색</div>
+    <div class="chips" style="margin-bottom:14px">
+      <div class="chip">24시간</div><div class="chip on">일주일</div>
+      <div class="chip">한달</div><div class="chip">전체</div></div>
+    <div class="rowb" style="gap:8px;margin-bottom:10px">
+      <span class="chip" style="background:var(--mint-t);color:var(--mint-tx);height:26px;font-size:11px">팔로잉</span>
+      <span class="cap" style="font-size:11.5px">팔로우한 사람 글이 먼저 보여요</span></div>
+    <div class="mason"><div><div class="rel"><div class="ph-img " style="aspect-ratio:0.78"></div><span class="tmark"><span class="tier t-on">현장 인증</span></span></div><div style="padding:5px 2px 0"><div class="lab" style="font-size:12px">전주 한옥마을</div><span class="cap" style="font-size:10.5px">♥ 128 · ♡ 24</span></div></div><div><div class="rel"><div class="ph-img " style="aspect-ratio:1.35"></div></div><div style="padding:5px 2px 0"><div class="lab" style="font-size:12px">임실 치즈테마파크</div><span class="cap" style="font-size:10.5px">♥ 86 · ♡ 7</span></div></div><div><div class="rel"><div class="ph-img " style="aspect-ratio:1.0"></div><span class="tmark"><span class="tier t-on">현장 인증</span></span></div><div style="padding:5px 2px 0"><div class="lab" style="font-size:12px">진안 홍삼축제</div><span class="cap" style="font-size:10.5px">♥ 212 · ♡ 19</span></div></div><div><div class="rel"><div class="ph-img " style="aspect-ratio:0.72"></div><span class="tmark"><span class="tier t-on">현장 인증</span></span></div><div style="padding:5px 2px 0"><div class="lab" style="font-size:12px">군산 철길마을</div><span class="cap" style="font-size:10.5px">♥ 54 · ♡ 3</span></div></div><div><div class="rel"><div class="ph-img " style="aspect-ratio:1.5"></div></div><div style="padding:5px 2px 0"><div class="lab" style="font-size:12px">남원 광한루</div><span class="cap" style="font-size:10.5px">♥ 98 · ♡ 11</span></div></div><div><div class="rel"><div class="ph-img " style="aspect-ratio:0.85"></div></div><div style="padding:5px 2px 0"><div class="lab" style="font-size:12px">변산 해넘이</div><span class="cap" style="font-size:10.5px">♥ 41 · ♡ 2</span></div></div><div><div class="rel"><div class="ph-img " style="aspect-ratio:1.0"></div><span class="tmark"><span class="tier t-on">현장 인증</span></span></div><div style="padding:5px 2px 0"><div class="lab" style="font-size:12px">마이산 탑사</div><span class="cap" style="font-size:10.5px">♥ 176 · ♡ 14</span></div></div><div><div class="rel"><div class="ph-img " style="aspect-ratio:0.66"></div></div><div style="padding:5px 2px 0"><div class="lab" style="font-size:12px">선유도 해변</div><span class="cap" style="font-size:10.5px">♥ 63 · ♡ 5</span></div></div></div>
+  </div>
+  <div class="scrollfade"></div>
+</div>
+<nav class="tabbar"><div class="tab on"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg><span>홈</span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg><span>커뮤니티</span></div><div class="tab tab-fab"><span class="fab"><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg><span>이벤트</span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg><span>마이</span></div></nav></div></div><figcaption>2-2 인기순</figcaption><p class="pnote">기간 <b>24시간·일주일·한달·전체</b>. 게시판 내 검색과 팔로잉 가중치가 여기 붙습니다.</p></figure><figure class="ph"><div class="frame"><div class="screen"><div class="statusbar"><span>9:41</span><span style="display:flex;gap:4px;align-items:center"><svg width="13" height="9" viewBox="0 0 13 9" fill="currentColor"><rect x="0" y="6" width="2" height="3" rx=".5"/><rect x="3.5" y="4" width="2" height="5" rx=".5"/><rect x="7" y="2" width="2" height="7" rx=".5"/><rect x="10.5" y="0" width="2" height="9" rx=".5"/></svg><i></i></span></div>
+<header class="topbar"><span class="tb-ic"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></span><h1>전북특별자치도</h1><span class="tb-right"></span></header>
+<div class="tabs"><div>최신</div><div>인기순</div><div class="on">태그별</div></div>
+<div class="body pad">
+  <div class="searchbar" style="margin-bottom:16px"><svg class="ic" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg>태그 검색</div>
+  <div class="rowb" style="padding:13px 0;border-bottom:1px solid var(--n100)">
+    <div style="width:40px;height:40px;border-radius:11px;background:var(--aq-100);color:var(--aq-600);
+      display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800">#</div>
+    <div style="flex:1;margin-left:11px"><div class="bs">한옥마을</div>
+      <p class="cap" style="font-size:11.5px;margin-top:2px">게시물 1,204</p></div>
+    <svg class="ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div><div class="rowb" style="padding:13px 0;border-bottom:1px solid var(--n100)">
+    <div style="width:40px;height:40px;border-radius:11px;background:var(--aq-100);color:var(--aq-600);
+      display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800">#</div>
+    <div style="flex:1;margin-left:11px"><div class="bs">임실 치즈축제</div>
+      <p class="cap" style="font-size:11.5px;margin-top:2px">게시물 842</p></div>
+    <svg class="ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div><div class="rowb" style="padding:13px 0;border-bottom:1px solid var(--n100)">
+    <div style="width:40px;height:40px;border-radius:11px;background:var(--aq-100);color:var(--aq-600);
+      display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800">#</div>
+    <div style="flex:1;margin-left:11px"><div class="bs">진안 홍삼축제</div>
+      <p class="cap" style="font-size:11.5px;margin-top:2px">게시물 617</p></div>
+    <svg class="ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div><div class="rowb" style="padding:13px 0;border-bottom:1px solid var(--n100)">
+    <div style="width:40px;height:40px;border-radius:11px;background:var(--aq-100);color:var(--aq-600);
+      display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800">#</div>
+    <div style="flex:1;margin-left:11px"><div class="bs">군산</div>
+      <p class="cap" style="font-size:11.5px;margin-top:2px">게시물 588</p></div>
+    <svg class="ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div><div class="rowb" style="padding:13px 0;border-bottom:1px solid var(--n100)">
+    <div style="width:40px;height:40px;border-radius:11px;background:var(--aq-100);color:var(--aq-600);
+      display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800">#</div>
+    <div style="flex:1;margin-left:11px"><div class="bs">전주비빔밥</div>
+      <p class="cap" style="font-size:11.5px;margin-top:2px">게시물 431</p></div>
+    <svg class="ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div><div class="rowb" style="padding:13px 0;border-bottom:1px solid var(--n100)">
+    <div style="width:40px;height:40px;border-radius:11px;background:var(--aq-100);color:var(--aq-600);
+      display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800">#</div>
+    <div style="flex:1;margin-left:11px"><div class="bs">내장산 단풍</div>
+      <p class="cap" style="font-size:11.5px;margin-top:2px">게시물 297</p></div>
+    <svg class="ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
+</div>
+<nav class="tabbar"><div class="tab on"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg><span>홈</span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg><span>커뮤니티</span></div><div class="tab tab-fab"><span class="fab"><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg><span>이벤트</span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg><span>마이</span></div></nav></div></div><figcaption>2-3 태그별</figcaption><p class="pnote">지역별 태그 집계는 <b>배치로 미리 계산</b>해 읽습니다.</p></figure></div><h2 class="sec">3. 업로드</h2><p class="secsub">별도 화면으로 분리했습니다. 장소 선택이 작성 화면 안에 있어야 인증·랭킹·방문기록이 동작합니다.</p><div class="row"><figure class="ph"><div class="frame"><div class="screen"><div class="statusbar"><span>9:41</span><span style="display:flex;gap:4px;align-items:center"><svg width="13" height="9" viewBox="0 0 13 9" fill="currentColor"><rect x="0" y="6" width="2" height="3" rx=".5"/><rect x="3.5" y="4" width="2" height="5" rx=".5"/><rect x="7" y="2" width="2" height="7" rx=".5"/><rect x="10.5" y="0" width="2" height="9" rx=".5"/></svg><i></i></span></div>
+<header class="topbar"><span class="tb-ic"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></span><h1>사진 올리기</h1><span class="tb-right"></span></header>
+<div class="body pad">
+  <div class="grid2" style="margin-bottom:18px">
+    <div class="card" style="aspect-ratio:1;display:flex;flex-direction:column;align-items:center;
+      justify-content:center;gap:10px;background:var(--aq-300);border:none;color:var(--aq-700)">
+      <svg class="ic" viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/></svg><div class="bs">지금 촬영하기</div>
+      <span class="cap" style="font-size:11px;color:var(--aq-700);opacity:.75">현장 인증 가능</span></div>
+    <div class="card" style="aspect-ratio:1;display:flex;flex-direction:column;align-items:center;
+      justify-content:center;gap:10px;color:var(--n600)">
+      <svg class="ic" viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="M3 17l5-4 4 3 3-2 6 5"/></svg><div class="bs">앨범에서 선택</div>
+      <span class="cap" style="font-size:11px">최대 10장</span></div>
+  </div>
+  <div class="rowb" style="justify-content:space-between;margin-bottom:10px">
+    <span class="lab">최근 항목</span>
+    <span class="lab" style="color:var(--aq-600)">전체보기</span></div>
+  <div class="grid3">
+    <div class="ph-img " style="aspect-ratio:1"></div><div class="ph-img b" style="aspect-ratio:1"></div><div class="ph-img y" style="aspect-ratio:1"></div><div class="ph-img p" style="aspect-ratio:1"></div><div class="ph-img v" style="aspect-ratio:1"></div><div class="ph-img g" style="aspect-ratio:1"></div>
+  </div>
+  <div class="card" style="background:var(--pear-t);border:none;margin-top:16px">
+    <div class="rowb" style="gap:8px;align-items:flex-start">
+      <span style="color:var(--pear-tx)"><svg class="ic" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.4 7-12A7 7 0 0 0 5 10c0 5.6 7 12 7 12z"/><circle cx="12" cy="10" r="2.6"/></svg></span>
+      <p class="cap" style="font-size:11.5px;color:var(--pear-on);line-height:1.55">
+        위치 정보가 없는 사진은 <b>위치 미확인</b>으로 처리되어 랭킹과 방문 기록에 반영되지 않아요</p></div>
+  </div>
+</div>
+<nav class="tabbar"><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg><span>홈</span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg><span>커뮤니티</span></div><div class="tab tab-fab"><span class="fab"><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg><span>이벤트</span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg><span>마이</span></div></nav></div></div><figcaption>3-1 진입</figcaption><p class="pnote"><b>지금 촬영</b>과 <b>앨범 선택</b> 두 갈래. 촬영 방식 구분이 현장 인증의 핵심 입력값입니다.</p></figure><figure class="ph"><div class="frame"><div class="screen"><div class="statusbar"><span>9:41</span><span style="display:flex;gap:4px;align-items:center"><svg width="13" height="9" viewBox="0 0 13 9" fill="currentColor"><rect x="0" y="6" width="2" height="3" rx=".5"/><rect x="3.5" y="4" width="2" height="5" rx=".5"/><rect x="7" y="2" width="2" height="7" rx=".5"/><rect x="10.5" y="0" width="2" height="9" rx=".5"/></svg><i></i></span></div>
+<header class="topbar"><span class="tb-ic"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></span><h1>게시글 작성</h1><span class="tb-right"><span class="lab" style="color:var(--aq-600)">게시</span></span></header>
+<div class="body pad" style="padding-bottom:0">
+  <div class="rowb" style="gap:8px;margin-bottom:16px">
+    <div class="rel" style="width:74px;flex:none"><div class="ph-img " style="aspect-ratio:1"></div><span class="ratio">4:3</span></div>
+    <div style="width:74px"><div class="ph-img b" style="aspect-ratio:1"></div></div>
+    <div class="card" style="width:74px;aspect-ratio:1;display:flex;align-items:center;
+      justify-content:center;color:var(--n400);border-style:dashed"><svg class="ic" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v12M6 12h12"/></svg></div>
+  </div>
+
+  <div class="lab" style="margin-bottom:8px">장소</div>
+  <div class="place on">
+    <span class="ok"><svg class="ic" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6"/></svg></span>
+    <div><div class="bs" style="font-size:14px">전주 한옥마을</div>
+      <span class="cap" style="font-size:11px">현장 인증 가능</span></div>
+    <span class="dist">34m</span></div>
+  <div class="place">
+    <span style="color:var(--n400)"><svg class="ic" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.4 7-12A7 7 0 0 0 5 10c0 5.6 7 12 7 12z"/><circle cx="12" cy="10" r="2.6"/></svg></span>
+    <div><div class="bs" style="font-size:14px">경기전</div>
+      <span class="cap" style="font-size:11px">위치 확인</span></div>
+    <span class="dist" style="color:var(--n400)">210m</span></div>
+  <div class="rowb" style="gap:6px;margin:2px 0 18px;color:var(--aq-600)">
+    <svg class="ic" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v12M6 12h12"/></svg><span class="lab">여기에 새 장소 만들기</span></div>
+
+  <div class="rowb" style="margin-bottom:8px">
+    <span class="lab">태그 선택</span>
+    <span class="lab" style="margin-left:auto;color:var(--mint-tx)">위치·행사 자동 추천</span></div>
+  <div class="chips" style="margin-bottom:8px">
+    <div class="chip auto"><svg class="ic" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6"/></svg>#전주</div>
+    <div class="chip auto"><svg class="ic" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6"/></svg>#한옥마을</div>
+    <div class="chip auto"><svg class="ic" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6"/></svg>#2026 전주비빔밥축제</div>
+    <div class="chip">#야경</div>
+    <div class="chip add"><svg class="ic" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v12M6 12h12"/></svg>직접 추가</div>
+  </div>
+  <p class="cap" style="font-size:11px;margin-bottom:16px">
+    지금 이 위치에서 <b style="color:var(--mint-tx)">진행중인 행사</b>를 찾아 태그로 넣었어요</p>
+
+  <div class="input" style="height:auto;padding:13px;align-items:flex-start;min-height:76px">
+    오늘 야간개장 다녀왔어요. 조명이 정말...</div>
+</div>
+<nav class="tabbar"><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg><span>홈</span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg><span>커뮤니티</span></div><div class="tab tab-fab"><span class="fab"><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg><span>이벤트</span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg><span>마이</span></div></nav></div></div><figcaption>3-2 게시글 작성</figcaption><p class="pnote">★ <b>장소 선택 + 자동 태그</b>가 이 화면 안에 들어옵니다. 자동 태그는 지역·분류·진행중 행사 세 갈래.</p></figure><figure class="ph"><div class="frame"><div class="screen"><div class="statusbar"><span>9:41</span><span style="display:flex;gap:4px;align-items:center"><svg width="13" height="9" viewBox="0 0 13 9" fill="currentColor"><rect x="0" y="6" width="2" height="3" rx=".5"/><rect x="3.5" y="4" width="2" height="5" rx=".5"/><rect x="7" y="2" width="2" height="7" rx=".5"/><rect x="10.5" y="0" width="2" height="9" rx=".5"/></svg><i></i></span></div>
+<header class="topbar"><span class="tb-ic"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></span><h1></h1><span class="tb-right"></span></header>
+<div class="body"><div class="mapwrap">
+  <svg class="kmap " viewBox="0 0 240 340" xmlns="http://www.w3.org/2000/svg"><path d="M48.9,47.7 L65.1,41.8 L78.3,32.8 L95.5,22.7 L115.1,23.9 L129.8,20.9 L139.6,14.9 L146.9,6.0 L155.3,29.8 L161.6,44.7 L171.4,56.7 L178.8,71.6 L185.7,83.5 L191.5,98.4 L195.9,113.3 L194.5,128.2 L193.5,143.2 L201.8,156.3 L197.4,164.0 L194.5,178.9 L191.5,190.9 L183.7,202.8 L177.8,214.7 L169.0,220.7 L159.2,229.7 L151.9,237.4 L145.5,229.7 L129.8,223.7 L121.0,230.8 L114.1,237.4 L109.2,244.6 L102.8,237.4 L90.6,253.5 L80.8,245.8 L71.0,257.7 L62.2,261.3 L53.8,255.3 L46.5,244.6 L41.6,232.6 L45.5,220.7 L47.5,208.8 L53.8,195.7 L50.4,183.7 L57.3,173.0 L61.2,162.2 L53.8,155.1 L51.4,143.2 L42.6,132.4 L39.1,119.3 L47.5,110.4 L56.3,104.4 L62.2,95.4 L56.3,84.7 L61.2,74.6 L52.4,65.6 L50.4,54.9 Z" class="kland"/><ellipse cx="52.9" cy="317.3" rx="20.6" ry="10.7" class="kland"/><path d="M61.2,65.6 L80.8,68.6 L100.4,68.6 L120.0,56.7 L139.6,53.7" class="kriver"/><path d="M112.6,161.1 L97.9,143.2 L83.2,134.2 L68.5,149.1 L61.2,161.1" class="kriver"/><path d="M80.8,208.8 L68.5,217.7 L53.8,226.7" class="kriver"/><path d="M161.6,125.3 L151.9,155.1 L146.9,184.9 L159.2,205.8 L171.4,214.7" class="kriver"/><path d="M93.0,23.9 L102.8,44.7 L115.1,58.5 L129.8,68.6 L142.0,76.4" class="kbound"/><path d="M53.8,101.4 L73.4,102.6 L93.0,104.4 L110.2,100.2 L127.4,98.4" class="kbound"/><path d="M75.9,102.6 L83.2,125.3 L78.3,144.4 L73.4,158.1" class="kbound"/><path d="M51.4,159.9 L75.9,162.2 L97.9,158.1 L120.0,155.1 L139.6,146.1" class="kbound"/><path d="M41.6,199.8 L63.6,202.8 L85.7,204.0 L105.3,205.8" class="kbound"/><path d="M105.3,205.8 L112.6,184.9 L120.0,158.1" class="kbound"/><path d="M120.0,183.7 L139.6,187.9 L164.1,184.9 L186.1,183.7" class="kbound"/><g transform="translate(57.900000000000006,27.400000000000006)"><rect x="-1.6" y="-1.6" width="37.2" height="37.2" rx="8.5" class="kshot-halo"/><rect x="0" y="0" width="34" height="34" rx="7" class="kshot g0"/><path d="M2,2 L32,32 M32,2 L2,32" class="kshot-in"/><path d="M12.0,35 L17.0,42 L22.0,35 Z" class="kshot-tail"/></g><g transform="translate(73.2,52.5)"><rect x="-1.6" y="-1.6" width="28.2" height="28.2" rx="8.5" class="kshot-halo"/><rect x="0" y="0" width="25" height="25" rx="7" class="kshot g1"/><path d="M2,2 L23,23 M23,2 L2,23" class="kshot-in"/><path d="M7.5,26 L12.5,33 L17.5,26 Z" class="kshot-tail"/></g><g transform="translate(66.2,137.8)"><rect x="-1.6" y="-1.6" width="37.2" height="37.2" rx="8.5" class="kshot-halo"/><rect x="0" y="0" width="34" height="34" rx="7" class="kshot g2"/><path d="M2,2 L32,32 M32,2 L2,32" class="kshot-in"/><path d="M12.0,35 L17.0,42 L22.0,35 Z" class="kshot-tail"/></g><g transform="translate(124.6,171.8)"><rect x="-1.6" y="-1.6" width="28.2" height="28.2" rx="8.5" class="kshot-halo"/><rect x="0" y="0" width="25" height="25" rx="7" class="kshot g3"/><path d="M2,2 L23,23 M23,2 L2,23" class="kshot-in"/><path d="M7.5,26 L12.5,33 L17.5,26 Z" class="kshot-tail"/></g><g transform="translate(162.9,179.0)"><rect x="-1.6" y="-1.6" width="28.2" height="28.2" rx="8.5" class="kshot-halo"/><rect x="0" y="0" width="25" height="25" rx="7" class="kshot g0"/><path d="M2,2 L23,23 M23,2 L2,23" class="kshot-in"/><path d="M7.5,26 L12.5,33 L17.5,26 Z" class="kshot-tail"/></g><g transform="translate(40.4,285.1)"><rect x="-1.6" y="-1.6" width="28.2" height="28.2" rx="8.5" class="kshot-halo"/><rect x="0" y="0" width="25" height="25" rx="7" class="kshot g1"/><path d="M2,2 L23,23 M23,2 L2,23" class="kshot-in"/><path d="M7.5,26 L12.5,33 L17.5,26 Z" class="kshot-tail"/></g><g transform="translate(146.7,106.19999999999999)"><rect x="-1.6" y="-1.6" width="28.2" height="28.2" rx="8.5" class="kshot-halo"/><rect x="0" y="0" width="25" height="25" rx="7" class="kshot g2"/><path d="M2,2 L23,23 M23,2 L2,23" class="kshot-in"/><path d="M7.5,26 L12.5,33 L17.5,26 Z" class="kshot-tail"/></g></svg>
+  <div style="position:absolute;top:16px;left:16px;right:16px;background:var(--mint);
+    color:var(--mint-on);border-radius:14px;padding:13px 14px;box-shadow:var(--sh2);z-index:2">
+    <div class="rowb" style="gap:8px"><span class="ok" style="background:#fff"><svg class="ic" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6"/></svg></span>
+      <div><div class="bs" style="font-size:14px">현장 인증 완료</div>
+        <p style="font-size:11.5px;margin-top:2px;opacity:.85">지도에 바로 올라갔어요</p></div></div>
+  </div>
+  <div class="mapbot">
+    <div class="rowb" style="gap:10px;margin-bottom:12px">
+      <div class="ph-img" style="width:46px;height:46px;border-radius:11px"></div>
+      <div style="flex:1"><div class="bs">전주 한옥마을</div>
+        <div class="rowb" style="gap:6px;margin-top:4px"><span class="tier t-on">현장 인증</span>
+          <span class="cap" style="font-size:11px">방문 기록 +1</span></div></div></div>
+    <div class="rowb" style="gap:8px">
+      <div class="btn s ghost" style="flex:1">내 게시물</div>
+      <div class="btn s" style="flex:1">지도 보기</div></div>
+    <p class="cap" style="font-size:11px;text-align:center;margin-top:10px">오늘 3장 / 30장</p>
+  </div>
+</div></div>
+<nav class="tabbar"><div class="tab on"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg><span>홈</span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg><span>커뮤니티</span></div><div class="tab tab-fab"><span class="fab"><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg><span>이벤트</span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg><span>마이</span></div></nav></div></div><figcaption>3-3 게시 완료</figcaption><p class="pnote">갱신 주기와 무관하게 <b>즉시 지도 반영</b>. 시연 때 필요합니다.</p></figure></div><h2 class="sec">4. 커뮤니티</h2><p class="secsub">검색이 독립 탭에서 이 안으로 들어왔습니다. 인기 사진·추천·랭킹·팔로잉 피드가 모입니다.</p><div class="row"><figure class="ph"><div class="frame"><div class="screen"><div class="statusbar"><span>9:41</span><span style="display:flex;gap:4px;align-items:center"><svg width="13" height="9" viewBox="0 0 13 9" fill="currentColor"><rect x="0" y="6" width="2" height="3" rx=".5"/><rect x="3.5" y="4" width="2" height="5" rx=".5"/><rect x="7" y="2" width="2" height="7" rx=".5"/><rect x="10.5" y="0" width="2" height="9" rx=".5"/></svg><i></i></span></div>
+<header class="topbar"><span class="tb-sp"></span><h1>커뮤니티</h1><span class="tb-right"></span></header>
+<div class="body pad" style="padding-bottom:0">
+  <div class="searchbar" style="margin-bottom:18px"><svg class="ic" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg>장소, 게시물, 사용자, 태그 검색</div>
+  <div class="rowb" style="margin-bottom:10px"><span class="title">이번주 인기 사진</span>
+    <span class="lab" style="margin-left:auto;color:var(--aq-600)">더보기</span></div>
+  <div class="chips" style="margin-bottom:12px">
+    <div class="chip">24시간</div><div class="chip on">일주일</div>
+    <div class="chip">한달</div><div class="chip">전체</div></div>
+  <div style="margin-bottom:20px"><div class="mason"><div><div class="rel"><div class="ph-img " style="aspect-ratio:0.8"></div><span class="tmark"><span class="tier t-on">현장 인증</span></span></div><div style="padding:5px 2px 0"><div class="lab" style="font-size:12px">전주 한옥마을 야경</div><span class="cap" style="font-size:10.5px">♥ 312</span></div></div><div><div class="rel"><div class="ph-img " style="aspect-ratio:1.4"></div></div><div style="padding:5px 2px 0"><div class="lab" style="font-size:12px">해운대 해수욕장</div><span class="cap" style="font-size:10.5px">♥ 287</span></div></div><div><div class="rel"><div class="ph-img " style="aspect-ratio:1.0"></div><span class="tmark"><span class="tier t-on">현장 인증</span></span></div><div style="padding:5px 2px 0"><div class="lab" style="font-size:12px">성산일출봉</div><span class="cap" style="font-size:10.5px">♥ 241</span></div></div><div><div class="rel"><div class="ph-img " style="aspect-ratio:0.7"></div></div><div style="padding:5px 2px 0"><div class="lab" style="font-size:12px">경주 불국사</div><span class="cap" style="font-size:10.5px">♥ 198</span></div></div><div><div class="rel"><div class="ph-img " style="aspect-ratio:1.2"></div><span class="tmark"><span class="tier t-on">현장 인증</span></span></div><div style="padding:5px 2px 0"><div class="lab" style="font-size:12px">임실 치즈축제</div><span class="cap" style="font-size:10.5px">♥ 176</span></div></div><div><div class="rel"><div class="ph-img " style="aspect-ratio:0.9"></div></div><div style="padding:5px 2px 0"><div class="lab" style="font-size:12px">남산 서울타워</div><span class="cap" style="font-size:10.5px">♥ 154</span></div></div></div></div>
+  <div class="rowb" style="margin-bottom:10px"><span class="title">랭킹</span>
+    <span class="lab" style="margin-left:auto;color:var(--aq-600)">전체</span></div>
+  <div class="rowb" style="padding:9px 0;gap:10px">
+    <div style="width:24px;text-align:center;font-size:15px;font-weight:800;
+      color:var(--pear-tx)">1</div>
+    <div class="ph-img " style="width:40px;height:40px;border-radius:10px"></div>
+    <div style="flex:1"><div class="bs" style="font-size:14px">전주 한옥마을</div>
+      <span class="cap" style="font-size:11px">전북 · 게시물 1,204</span></div>
+    <span class="lab" style="color:var(--mint-tx)">▲2</span></div><div class="rowb" style="padding:9px 0;gap:10px">
+    <div style="width:24px;text-align:center;font-size:15px;font-weight:800;
+      color:var(--pear-tx)">2</div>
+    <div class="ph-img b" style="width:40px;height:40px;border-radius:10px"></div>
+    <div style="flex:1"><div class="bs" style="font-size:14px">해운대 해수욕장</div>
+      <span class="cap" style="font-size:11px">부산 · 게시물 1,102</span></div>
+    <span class="lab" style="color:var(--mint-tx)">▼1</span></div><div class="rowb" style="padding:9px 0;gap:10px">
+    <div style="width:24px;text-align:center;font-size:15px;font-weight:800;
+      color:var(--pear-tx)">3</div>
+    <div class="ph-img y" style="width:40px;height:40px;border-radius:10px"></div>
+    <div style="flex:1"><div class="bs" style="font-size:14px">성산일출봉</div>
+      <span class="cap" style="font-size:11px">제주 · 게시물 987</span></div>
+    <span class="lab" style="color:var(--mint-tx)">—</span></div>
+</div>
+<nav class="tabbar"><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg><span>홈</span></div><div class="tab on"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg><span>커뮤니티</span></div><div class="tab tab-fab"><span class="fab"><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg><span>이벤트</span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg><span>마이</span></div></nav></div></div><figcaption>4-1 커뮤니티 홈</figcaption><p class="pnote">검색 + 기간별 인기 사진 + 랭킹. 트래픽이 몰리는 화면이라 <b>캐시 권장</b>.</p></figure></div><h2 class="sec">5. 이벤트</h2><p class="secsub">지자체 행사. 관광공사 축제 데이터가 기반이고, 행사 기간이 자동 태그 추천에도 쓰입니다.</p><div class="row"><figure class="ph"><div class="frame"><div class="screen"><div class="statusbar"><span>9:41</span><span style="display:flex;gap:4px;align-items:center"><svg width="13" height="9" viewBox="0 0 13 9" fill="currentColor"><rect x="0" y="6" width="2" height="3" rx=".5"/><rect x="3.5" y="4" width="2" height="5" rx=".5"/><rect x="7" y="2" width="2" height="7" rx=".5"/><rect x="10.5" y="0" width="2" height="9" rx=".5"/></svg><i></i></span></div>
+<header class="topbar"><span class="tb-sp"></span><h1>이벤트</h1><span class="tb-right"></span></header>
+<div class="tabs"><div class="on">진행중</div><div>예정</div><div>내 주변</div></div>
+<div class="body pad" style="padding-bottom:0">
+  <div class="chips" style="margin-bottom:14px">
+    <div class="chip on">전체</div><div class="chip">전북</div>
+    <div class="chip">경북</div><div class="chip">제주</div></div>
+  <div class="ev">
+    <div class="ph-img  evimg"></div>
+    <div style="flex:1">
+      <span class="evbadge ">D-3 종료</span>
+      <div class="bs" style="font-size:14px;margin:6px 0 3px">2026 전주비빔밥축제</div>
+      <p class="cap" style="font-size:11.5px">10.02 ~ 10.05</p>
+      <p class="cap" style="font-size:11.5px;margin-top:2px">전북 전주시 · 전주시청</p></div></div><div class="ev">
+    <div class="ph-img y evimg"></div>
+    <div style="flex:1">
+      <span class="evbadge ">진행중</span>
+      <div class="bs" style="font-size:14px;margin:6px 0 3px">진안 홍삼축제</div>
+      <p class="cap" style="font-size:11.5px">09.28 ~ 10.06</p>
+      <p class="cap" style="font-size:11.5px;margin-top:2px">전북 진안군 · 진안군청</p></div></div><div class="ev">
+    <div class="ph-img b evimg"></div>
+    <div style="flex:1">
+      <span class="evbadge soon">D+5 시작</span>
+      <div class="bs" style="font-size:14px;margin:6px 0 3px">임실N치즈축제</div>
+      <p class="cap" style="font-size:11.5px">10.11 ~ 10.15</p>
+      <p class="cap" style="font-size:11.5px;margin-top:2px">전북 임실군 · 임실군청</p></div></div><div class="ev">
+    <div class="ph-img v evimg"></div>
+    <div style="flex:1">
+      <span class="evbadge soon">D+12 시작</span>
+      <div class="bs" style="font-size:14px;margin:6px 0 3px">군산시간여행축제</div>
+      <p class="cap" style="font-size:11.5px">10.18 ~ 10.20</p>
+      <p class="cap" style="font-size:11.5px;margin-top:2px">전북 군산시 · 군산시청</p></div></div>
+</div>
+<nav class="tabbar"><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg><span>홈</span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg><span>커뮤니티</span></div><div class="tab tab-fab"><span class="fab"><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span></div><div class="tab on"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg><span>이벤트</span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg><span>마이</span></div></nav></div></div><figcaption>5-1 행사 목록</figcaption><p class="pnote">진행중 / 예정 / 내 주변 3탭. 기간 데이터가 있어야 D-day 계산이 됩니다.</p></figure><figure class="ph"><div class="frame"><div class="screen"><div class="statusbar"><span>9:41</span><span style="display:flex;gap:4px;align-items:center"><svg width="13" height="9" viewBox="0 0 13 9" fill="currentColor"><rect x="0" y="6" width="2" height="3" rx=".5"/><rect x="3.5" y="4" width="2" height="5" rx=".5"/><rect x="7" y="2" width="2" height="7" rx=".5"/><rect x="10.5" y="0" width="2" height="9" rx=".5"/></svg><i></i></span></div>
+<header class="topbar"><span class="tb-ic"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></span><h1>행사 상세</h1><span class="tb-right"><svg class="ic" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg></span></header>
+<div class="body rel">
+  <div class="ph-img y" style="border-radius:0;aspect-ratio:1.6"></div>
+  <div class="pad">
+    <span class="evbadge">진행중</span>
+    <div class="h2" style="margin:9px 0 6px">진안 홍삼축제</div>
+    <p class="cap" style="font-size:12.5px;line-height:1.7">
+      2026.09.28 ~ 10.06<br>전북 진안군 진안읍 홍삼로<br>주최 · 진안군청</p>
+    <div class="rowb" style="gap:8px;margin:16px 0">
+      <div class="btn s" style="flex:1"><svg class="ic" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/></svg>사진 올리기</div>
+      <div class="btn s ghost" style="flex:none;width:52px"><svg class="ic" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.4 7-12A7 7 0 0 0 5 10c0 5.6 7 12 7 12z"/><circle cx="12" cy="10" r="2.6"/></svg></div></div>
+    <div class="card" style="background:var(--mint-t);border:none;margin-bottom:18px">
+      <div class="rowb" style="gap:8px;align-items:flex-start">
+        <span style="color:var(--mint-tx)"><svg class="ic" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6"/></svg></span>
+        <p class="cap" style="font-size:11.5px;color:var(--mint-on);line-height:1.55">
+          여기서 사진을 올리면 <b>#진안홍삼축제</b> 태그가 자동으로 붙어요</p></div></div>
+    <div class="rowb" style="margin-bottom:10px"><span class="title">참여 사진 617</span>
+      <span class="lab" style="margin-left:auto;color:var(--aq-600)">전체</span></div>
+    <div class="mason"><div><div class="rel"><div class="ph-img " style="aspect-ratio:0.8"></div><span class="tmark"><span class="tier t-on">현장 인증</span></span></div></div><div><div class="rel"><div class="ph-img " style="aspect-ratio:1.35"></div><span class="tmark"><span class="tier t-on">현장 인증</span></span></div></div><div><div class="rel"><div class="ph-img " style="aspect-ratio:1.0"></div></div></div><div><div class="rel"><div class="ph-img " style="aspect-ratio:0.72"></div><span class="tmark"><span class="tier t-on">현장 인증</span></span></div></div></div>
+  </div>
+  <div class="scrollfade"></div>
+</div>
+<nav class="tabbar"><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg><span>홈</span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg><span>커뮤니티</span></div><div class="tab tab-fab"><span class="fab"><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span></div><div class="tab on"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg><span>이벤트</span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg><span>마이</span></div></nav></div></div><figcaption>5-2 행사 상세</figcaption><p class="pnote">여기서 업로드하면 <b>행사 태그가 자동 선택</b>됩니다. 영상은 이벤트에서 먼저 열기를 권장.</p></figure></div><h2 class="sec">6. 게시물 상세</h2><p class="secsub">작성자의 인기 지수·등급이 함께 보이고, 자동 태그가 그대로 노출됩니다.</p><div class="row"><figure class="ph"><div class="frame"><div class="screen"><div class="statusbar"><span>9:41</span><span style="display:flex;gap:4px;align-items:center"><svg width="13" height="9" viewBox="0 0 13 9" fill="currentColor"><rect x="0" y="6" width="2" height="3" rx=".5"/><rect x="3.5" y="4" width="2" height="5" rx=".5"/><rect x="7" y="2" width="2" height="7" rx=".5"/><rect x="10.5" y="0" width="2" height="9" rx=".5"/></svg><i></i></span></div>
+<header class="topbar"><span class="tb-ic"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></span><h1></h1><span class="tb-right"><svg class="ic" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg></span></header>
+<div class="body rel">
+  <div class="rel"><div class="ph-img " style="aspect-ratio:1.15"></div><span class="ratio">1 / 3</span></div>
+  <div class="pad">
+    <div class="rowb" style="gap:9px;margin-bottom:14px">
+      <div class="av">민</div>
+      <div style="flex:1"><div class="bs" style="font-size:14px">mina_travel</div>
+        <div class="rowb" style="gap:5px;margin-top:2px">
+          <span class="gradepill" style="font-size:10px">TREE</span>
+          <span class="cap" style="font-size:11px">인기 지수 1,842</span></div></div>
+      <span class="chip on" style="height:30px;font-size:11.5px">팔로우</span></div>
+
+    <div class="rowb" style="gap:7px;margin-bottom:12px">
+      <span class="tier t-on">현장 인증</span><span class="cap" style="font-size:11px">34m · 오늘 14:28</span></div>
+
+    <div class="place on" style="margin-bottom:14px">
+      <span style="color:var(--aq-600)"><svg class="ic" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.4 7-12A7 7 0 0 0 5 10c0 5.6 7 12 7 12z"/><circle cx="12" cy="10" r="2.6"/></svg></span>
+      <div><div class="bs" style="font-size:14px">전주 한옥마을</div>
+        <span class="cap" style="font-size:11px">전북특별자치도 전주시</span></div>
+      <svg class="ic" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
+
+    <p class="body15" style="line-height:1.7;margin-bottom:12px">
+      야간개장 다녀왔어요. 사람은 많았지만 조명이 정말 예뻤습니다 🏮</p>
+    <div class="chips" style="margin-bottom:16px">
+      <div class="chip" style="background:var(--aq-100);color:var(--aq-600)">#전주</div>
+      <div class="chip" style="background:var(--aq-100);color:var(--aq-600)">#한옥마을</div>
+      <div class="chip" style="background:var(--aq-100);color:var(--aq-600)">#2026 전주비빔밥축제</div></div>
+
+    <div class="rowb" style="gap:18px;padding:13px 0;border-top:1px solid var(--n100);
+      border-bottom:1px solid var(--n100);margin-bottom:14px">
+      <span class="rowb" style="gap:6px;color:var(--pink-tx)"><svg class="ic" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-9.4A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.6c0 5-7 9.4-7 9.4z"/></svg><b class="lab">312</b></span>
+      <span class="rowb" style="gap:6px;color:var(--n500)"><svg class="ic" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-8 8H8l-4 3v-5.5A8 8 0 1 1 21 12z"/></svg><b class="lab">28</b></span>
+      <span class="cap" style="margin-left:auto;font-size:11px">조회 3,021</span></div>
+
+    <div class="rowb" style="gap:9px;align-items:flex-start;margin-bottom:12px">
+      <div class="av" style="width:30px;height:30px;font-size:11px;background:var(--pear)">준</div>
+      <div><div class="rowb" style="gap:6px"><span class="lab">jun_photo</span>
+        <span class="cap" style="font-size:10.5px">2시간 전</span></div>
+        <p class="cap" style="font-size:12.5px;color:var(--n700);margin-top:3px">
+          야간개장 몇 시까지 하나요?</p></div></div>
+  </div>
+  <div class="scrollfade"></div>
+</div></div></div><figcaption>6-1 게시물 상세</figcaption><p class="pnote">위치와 인증 등급은 <b>수정 불가</b>. 인증 체계를 보호해야 랭킹이 신뢰를 얻습니다.</p></figure></div><h2 class="sec">7. 마이페이지 · 알림</h2><p class="secsub">인기 지수·등급·개인 SNS가 프로필 상단에 옵니다.</p><div class="row"><figure class="ph"><div class="frame"><div class="screen"><div class="statusbar"><span>9:41</span><span style="display:flex;gap:4px;align-items:center"><svg width="13" height="9" viewBox="0 0 13 9" fill="currentColor"><rect x="0" y="6" width="2" height="3" rx=".5"/><rect x="3.5" y="4" width="2" height="5" rx=".5"/><rect x="7" y="2" width="2" height="7" rx=".5"/><rect x="10.5" y="0" width="2" height="9" rx=".5"/></svg><i></i></span></div>
+<header class="topbar"><span class="tb-sp"></span><h1>마이</h1><span class="tb-right"><svg class="ic" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 8l9 5 9-5z"/><path d="M3 13l9 5 9-5"/></svg></span></header>
+<div class="body rel">
+  <div class="pad">
+    <div class="rowb" style="gap:14px;margin-bottom:14px">
+      <div class="av lg">민</div>
+      <div style="flex:1">
+        <div class="h2">mina_travel</div>
+        <div class="rowb" style="gap:6px;margin-top:6px">
+          <span class="gradepill"><svg class="ic" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6"/></svg>TREE</span>
+          <span class="cap" style="font-size:11.5px">인기 지수 1,842</span></div>
+        <div class="sns">
+          <span><svg class="ic" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 15l6-6"/><path d="M13.5 7.5 15 6a3.5 3.5 0 0 1 5 5l-1.5 1.5"/><path d="M10.5 16.5 9 18a3.5 3.5 0 0 1-5-5l1.5-1.5"/></svg>instagram</span>
+          <span><svg class="ic" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 15l6-6"/><path d="M13.5 7.5 15 6a3.5 3.5 0 0 1 5 5l-1.5 1.5"/><path d="M10.5 16.5 9 18a3.5 3.5 0 0 1-5-5l1.5-1.5"/></svg>youtube</span></div></div></div>
+
+    <div class="card" style="background:var(--pear-t);border:none;margin-bottom:16px">
+      <div class="rowb" style="justify-content:space-between;margin-bottom:7px">
+        <span class="lab" style="color:var(--pear-on)">다음 등급까지</span>
+        <span class="lab" style="color:var(--pear-on)">1,842 / 3,000</span></div>
+      <div style="height:6px;border-radius:9px;background:#fff;overflow:hidden">
+        <i style="display:block;width:61%;height:100%;background:var(--pear-tx);border-radius:9px"></i></div>
+    </div>
+
+    <div class="rowb" style="padding:14px 0;border-top:1px solid var(--n100);
+      border-bottom:1px solid var(--n100);margin-bottom:16px">
+      <div class="stat"><b>128</b><span>게시물</span></div>
+      <div class="stat"><b>842</b><span>팔로워</span></div>
+      <div class="stat"><b>316</b><span>팔로잉</span></div>
+      <div class="stat"><b>47</b><span>방문 장소</span></div></div>
+
+    <div class="chips" style="margin-bottom:14px">
+      <div class="chip on">게시물</div><div class="chip">방문 기록</div>
+      <div class="chip">저장</div></div>
+    <div class="mason"><div><div class="rel"><div class="ph-img " style="aspect-ratio:0.75"></div><span class="tmark"><span class="tier t-on">현장 인증</span></span></div></div><div><div class="rel"><div class="ph-img " style="aspect-ratio:1.3"></div></div></div><div><div class="rel"><div class="ph-img " style="aspect-ratio:1.0"></div><span class="tmark"><span class="tier t-on">현장 인증</span></span></div></div><div><div class="rel"><div class="ph-img " style="aspect-ratio:0.85"></div></div></div><div><div class="rel"><div class="ph-img " style="aspect-ratio:1.45"></div><span class="tmark"><span class="tier t-on">현장 인증</span></span></div></div><div><div class="rel"><div class="ph-img " style="aspect-ratio:0.7"></div></div></div></div>
+  </div>
+  <div class="scrollfade"></div>
+</div>
+<nav class="tabbar"><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg><span>홈</span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg><span>커뮤니티</span></div><div class="tab tab-fab"><span class="fab"><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg><span>이벤트</span></div><div class="tab on"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg><i class="badge">3</i><span>마이</span></div></nav></div></div><figcaption>7-1 마이페이지</figcaption><p class="pnote">인기 지수는 <b>받은 좋아요·댓글에 비중</b>을 둬야 자기 활동만으로 올리는 것을 막습니다.</p></figure><figure class="ph"><div class="frame"><div class="screen"><div class="statusbar"><span>9:41</span><span style="display:flex;gap:4px;align-items:center"><svg width="13" height="9" viewBox="0 0 13 9" fill="currentColor"><rect x="0" y="6" width="2" height="3" rx=".5"/><rect x="3.5" y="4" width="2" height="5" rx=".5"/><rect x="7" y="2" width="2" height="7" rx=".5"/><rect x="10.5" y="0" width="2" height="9" rx=".5"/></svg><i></i></span></div>
+<header class="topbar"><span class="tb-ic"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></span><h1>알림</h1><span class="tb-right"><span class="lab" style="color:var(--aq-600)">모두 읽음</span></span></header>
+<div class="body pad">
+  <div class="notif un">
+    <div class="av" style="width:36px;height:36px;font-size:12px;background:var(--pink)">준</div>
+    <div style="flex:1"><p class="cap" style="font-size:12.5px;color:var(--n800);line-height:1.5"><b>jun_photo</b>님이 회원님의 게시물을 좋아합니다</p>
+      <span class="cap" style="font-size:10.5px">5분 전</span></div>
+    <div class="ph-img" style="width:40px;height:40px;border-radius:9px"></div></div><div class="notif un">
+    <div class="av" style="width:36px;height:36px;font-size:12px;background:var(--aq-200)">서</div>
+    <div style="flex:1"><p class="cap" style="font-size:12.5px;color:var(--n800);line-height:1.5"><b>seo_kim</b>님이 회원님을 팔로우했습니다</p>
+      <span class="cap" style="font-size:10.5px">22분 전</span></div>
+    </div><div class="notif un">
+    <div class="av" style="width:36px;height:36px;font-size:12px;background:var(--pear)"></div>
+    <div style="flex:1"><p class="cap" style="font-size:12.5px;color:var(--n800);line-height:1.5"><b>등급이 올랐어요!</b> SPROUT → TREE</p>
+      <span class="cap" style="font-size:10.5px">1시간 전</span></div>
+    </div><div class="notif ">
+    <div class="av" style="width:36px;height:36px;font-size:12px;background:var(--mint)">하</div>
+    <div style="flex:1"><p class="cap" style="font-size:12.5px;color:var(--n800);line-height:1.5"><b>ha_travel</b>님이 댓글을 남겼습니다</p>
+      <span class="cap" style="font-size:10.5px">3시간 전</span></div>
+    <div class="ph-img b" style="width:40px;height:40px;border-radius:9px"></div></div><div class="notif ">
+    <div class="av" style="width:36px;height:36px;font-size:12px;background:var(--lily)">민</div>
+    <div style="flex:1"><p class="cap" style="font-size:12.5px;color:var(--n800);line-height:1.5"><b>min_j</b>님이 새 게시물을 올렸습니다</p>
+      <span class="cap" style="font-size:10.5px">어제</span></div>
+    <div class="ph-img y" style="width:40px;height:40px;border-radius:9px"></div></div>
+</div>
+<nav class="tabbar"><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg><span>홈</span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg><span>커뮤니티</span></div><div class="tab tab-fab"><span class="fab"><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span></div><div class="tab"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg><span>이벤트</span></div><div class="tab on"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg><span>마이</span></div></nav></div></div><figcaption>7-2 알림</figcaption><p class="pnote">문구는 서버가 <b>코드+값</b>으로 주고 앱이 언어에 맞게 조립합니다.</p></figure></div><h2 class="sec">8. 계정 — 필요할 때만 진입</h2><p class="secsub"><b>로그인 화면은 랜딩이 아닙니다.</b> 게시글을 올리려 할 때, 그리고 좋아요·댓글·팔로우·저장을 시도할 때만 시트로 올라옵니다.</p><div class="row"><figure class="ph"><div class="frame"><div class="screen"><div class="statusbar"><span>9:41</span><span style="display:flex;gap:4px;align-items:center"><svg width="13" height="9" viewBox="0 0 13 9" fill="currentColor"><rect x="0" y="6" width="2" height="3" rx=".5"/><rect x="3.5" y="4" width="2" height="5" rx=".5"/><rect x="7" y="2" width="2" height="7" rx=".5"/><rect x="10.5" y="0" width="2" height="9" rx=".5"/></svg><i></i></span></div>
+<header class="topbar"><span class="tb-ic"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></span><h1>사진 올리기</h1><span class="tb-right"></span></header>
+<div class="body pad" style="filter:saturate(.6);opacity:.55">
+  <div class="grid2" style="margin-bottom:18px">
+    <div class="card" style="aspect-ratio:1;display:flex;flex-direction:column;align-items:center;
+      justify-content:center;gap:10px;background:var(--aq-300);border:none;color:var(--aq-700)">
+      <svg class="ic" viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/></svg><div class="bs">지금 촬영하기</div></div>
+    <div class="card" style="aspect-ratio:1;display:flex;flex-direction:column;align-items:center;
+      justify-content:center;gap:10px;color:var(--n600)">
+      <svg class="ic" viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="M3 17l5-4 4 3 3-2 6 5"/></svg><div class="bs">앨범에서 선택</div></div>
+  </div>
+  <div class="grid3"><div class="ph-img " style="aspect-ratio:1"></div><div class="ph-img b" style="aspect-ratio:1"></div><div class="ph-img y" style="aspect-ratio:1"></div></div>
+</div>
+<div style="position:absolute;top:52px;bottom:0;left:0;right:0;background:rgba(16,39,48,.30);z-index:3"></div>
+<div class="sheet">
+  <div class="grab"></div>
+  <div style="text-align:center;margin-bottom:8px">
+    <div style="width:52px;height:52px;border-radius:999px;background:var(--aq-100);color:var(--aq-600);
+      display:flex;align-items:center;justify-content:center;margin:0 auto 14px"><svg class="ic" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/></svg></div>
+    <div class="h2">사진을 올리려면<br>로그인이 필요해요</div>
+    <p class="cap" style="font-size:12.5px;margin-top:9px;line-height:1.6">
+      올린 사진은 계정에 보관되고<br>방문 기록과 인기 지수로 쌓여요</p></div>
+  <div class="btn dark" style="margin:18px 0 9px">구글 계정으로 로그인</div>
+  <div class="btn ghost" style="margin-bottom:14px">아이디로 로그인</div>
+  <p class="cap" style="text-align:center;font-size:12px">둘러보기는 로그인 없이 계속할 수 있어요</p>
+</div></div></div><figcaption>8-1 업로드 시도 → 로그인 ★ 진입점</figcaption><p class="pnote"><b>게시글을 올리려 할 때</b> 여기서 처음 로그인을 만납니다. 좋아요·댓글·팔로우·저장도 같은 시트로 유도합니다.</p></figure><figure class="ph"><div class="frame"><div class="screen"><div class="statusbar"><span>9:41</span><span style="display:flex;gap:4px;align-items:center"><svg width="13" height="9" viewBox="0 0 13 9" fill="currentColor"><rect x="0" y="6" width="2" height="3" rx=".5"/><rect x="3.5" y="4" width="2" height="5" rx=".5"/><rect x="7" y="2" width="2" height="7" rx=".5"/><rect x="10.5" y="0" width="2" height="9" rx=".5"/></svg><i></i></span></div>
+<header class="topbar"><span class="tb-ic"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></span><h1>로그인</h1><span class="tb-right"></span></header>
+<div class="body pad" style="padding-top:24px">
+  <div class="card" style="background:var(--aq-100);border:none;margin-bottom:24px">
+    <div class="rowb" style="gap:9px;align-items:flex-start">
+      <span style="color:var(--aq-600)"><svg class="ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/></svg></span>
+      <p class="cap" style="font-size:12px;color:var(--aq-700);line-height:1.55">
+        로그인하면 사진을 올리고 방문 기록과 인기 지수를 쌓을 수 있어요</p></div></div>
+  <div class="field"><label>아이디</label><div class="input">traveler_id</div></div>
+  <div class="field" style="margin-bottom:22px"><label>비밀번호</label><div class="input">••••••••</div></div>
+  <div class="btn dark">로그인</div>
+  <div style="display:flex;align-items:center;gap:10px;margin:20px 0">
+    <i style="flex:1;height:1px;background:var(--n200)"></i>
+    <span class="cap" style="font-size:12px">또는</span>
+    <i style="flex:1;height:1px;background:var(--n200)"></i>
+  </div>
+  <div class="btn ghost">구글 계정으로 로그인</div>
+  <p class="cap" style="text-align:center;margin-top:22px;font-size:12.5px">
+    계정이 없으신가요? <b style="color:var(--aq-600)">회원가입</b></p>
+</div></div></div><figcaption>8-2 로그인</figcaption><p class="pnote">시트에서 진입. 소셜은 <b>구글 단독</b>, 아이디·비밀번호와 병행합니다.</p></figure><figure class="ph"><div class="frame"><div class="screen"><div class="statusbar"><span>9:41</span><span style="display:flex;gap:4px;align-items:center"><svg width="13" height="9" viewBox="0 0 13 9" fill="currentColor"><rect x="0" y="6" width="2" height="3" rx=".5"/><rect x="3.5" y="4" width="2" height="5" rx=".5"/><rect x="7" y="2" width="2" height="7" rx=".5"/><rect x="10.5" y="0" width="2" height="9" rx=".5"/></svg><i></i></span></div>
+<header class="topbar"><span class="tb-ic"><svg class="ic" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></span><h1>회원가입</h1><span class="tb-right"></span></header>
+<div class="body pad">
+  <div class="field"><label>아이디</label>
+    <div class="input" style="justify-content:space-between">
+      <span>lotus_2026</span>
+      <span class="lab" style="color:var(--mint-tx)">사용 가능</span></div></div>
+  <div class="field"><label>비밀번호</label><div class="input">••••••••</div>
+    <p class="cap" style="font-size:11.5px;margin-top:6px">8자 이상 · 영문과 숫자 조합</p></div>
+  <div class="field"><label>비밀번호 확인</label><div class="input">••••••••</div></div>
+  <div class="field"><label>이메일 <span style="color:var(--err)">(비밀번호 찾기용)</span></label>
+    <div class="input">you@example.com</div>
+    <p class="cap" style="font-size:11.5px;margin-top:6px;color:var(--err)">
+      미입력 시 비밀번호를 잊으면 계정을 복구할 수 없습니다</p></div>
+  <div class="card" style="background:var(--n50);border:none;font-size:12px;color:var(--n600);margin:6px 0 18px">
+    <div class="rowb" style="gap:8px"><span class="ok"><svg class="ic" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6"/></svg></span>
+      <span>이용약관 및 개인정보 처리방침 동의</span></div></div>
+  <div class="btn dark">가입하기</div>
+</div></div></div><figcaption>8-3 회원가입</figcaption><p class="pnote">와이어프레임에 이메일란이 없었습니다. 없으면 <b>비밀번호 복구가 불가능</b>해 빨간 문구로 표시해뒀습니다.</p></figure></div></div></body></html>

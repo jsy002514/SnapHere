@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "SnapHere 서버 실행 (local)",
+      "request": "launch",
+      "mainClass": "com.ssafy.snaphere.SnaphereApplication",
+      "projectName": "snaphere",
+      "args": "--spring.profiles.active=local",
+      "env": {}
+    }
+  ]
+}

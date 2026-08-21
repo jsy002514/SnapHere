@@ -216,3 +216,59 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ============================================================
+# Java / Gradle / Spring Boot  (2026-08-21 백엔드 추가)
+# ============================================================
+# ⚠️ 원래 이 파일은 Python 전용이라 Java 항목이 없었습니다.
+#    .gradle/ 이 빠져 있으면 로컬 캐시가 통째로 커밋됩니다.
+
+.gradle/
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+!gradlew
+!gradlew.bat
+bin/
+out/
+!**/src/main/**/build/
+!**/src/test/**/build/
+HELP.md
+
+# IDE
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+.classpath
+.project
+.settings/
+.factorypath
+.apt_generated/
+.springBeans
+.sts4-cache
+
+# ⚠️ 비밀값 — 절대 커밋 금지
+src/main/resources/application-local.yml
+src/main/resources/application-prod.yml
+**/application-local.yml
+**/application-secret.yml
+*.pem
+*.p12
+*.jks
+firebase-service-account*.json
+.env
+.env.*
+!.env.example
+
+# 임시
+_to_delete/
+*.log
+logs/
+
+# 로컬 미디어 저장소 (업로드된 파일)
+media-store/
