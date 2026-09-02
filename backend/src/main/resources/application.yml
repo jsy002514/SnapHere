@@ -1,5 +1,5 @@
 # SnapHere API — 공통 설정
-# 명세: docs/03-api-spec.md > 2. 공통 규약
+# 명세: docs/specs/snaphere-api-spec-v1.1.3.xlsx > 4. 공통 규약
 spring:
   config:
     # 개발 시 저장소 루트의 .env를 Spring properties로 읽는다. 운영 환경 변수는 이를 덮어쓴다.
@@ -28,8 +28,6 @@ server:
     context-path: /                # Base URL 접두어는 컨트롤러의 /api/v1 로 표기 (SYS-013)
 
 snaphere:
-  # 장소·이벤트 고정 데이터. 해당 테이블과 JPA 가 들어오면 false 로 두고 제거한다
-  stub-data: ${SNAPHERE_STUB_DATA:true}
   api:
     base-path: /api/v1             # SYS-013
   paging:
@@ -41,15 +39,6 @@ snaphere:
     google-client-id: ${GOOGLE_OAUTH_CLIENT_ID:}
     jwt-secret: ${SNAPHERE_JWT_SECRET:}
     terms-version: ${SNAPHERE_TERMS_VERSION:2026-08-01}
-  media:
-    # provider=stub 이면 실제 업로드 없이 형태만 같은 주소를 준다 (로컬 개발용)
-    provider: ${MEDIA_PROVIDER:stub}
-    bucket: ${MEDIA_S3_BUCKET:}
-    region: ${MEDIA_S3_REGION:ap-northeast-2}
-    public-base-url: ${MEDIA_PUBLIC_BASE_URL:}
-    presign-ttl: 5m                # SYS-020 — 서명 주소 유효 시간
-    max-file-size-bytes: 10485760  # PST-015 — 장당 10MB
-    # AWS 자격증명은 여기 적지 않는다. SDK 기본 체인(환경변수·프로파일·인스턴스 역할)을 쓴다
 
 logging:
   level:

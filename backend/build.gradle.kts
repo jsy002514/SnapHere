@@ -27,13 +27,8 @@ dependencies {
     implementation("org.flywaydb:flyway-database-postgresql")
     runtimeOnly("org.postgresql:postgresql")
 
-    // S3 Presigned URL 발급 (PST-013, SYS-020)
-    implementation(platform("software.amazon.awssdk:bom:2.32.9"))
-    implementation("software.amazon.awssdk:s3")
-
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
-    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
