@@ -106,4 +106,27 @@ public interface VisitRepository extends JpaRepository<VisitEntity, Long> {
                                           @Param("cursorVisitedOn") LocalDate cursorVisitedOn,
                                           @Param("cursorVisitId") Long cursorVisitId,
                                           Pageable pageable);
+
+    /**
+     * 방문 지도 마커. 장소 하나당 한 점이다. (VST-007)
+     *
+     * <p>좌표 없는 장소는 뺀다 (PLC-007). 지도에 찍을 수 없는 점을 내려보내면 클라이언트가
+     * 경계 계산에서 걸러야 하고, 그러면 서버가 준 bounds 와 어긋난다.
+     *
+     * <p>방문 횟수가 많은 곳부터 준다. 오래 쓴 사용자는 장소가 수천 개가 될 수 있어 상한을
+     * 두는데, 잘릴 때 남는 것이 자주 간 곳이어야 지도가 덜 이상해진다.
+     *
+     * @return {@code [placeId, lat, lng, 방문 횟수]}
+     */
+    @Query("""
+            select p.placeId, p.lat, p.lng, count(v.visitId)
+              from VisitEntity v, PlaceEntity p
+             where v.placeId = p.placeId
+               and v.userId = :userId
+               and p.lat is not null
+               and p.lng is not null
+             group by p.placeId, p.lat, p.lng
+             order by count(v.visitId) desc, p.placeId asc
+            """)
+    List<Object[]> findVisitMapPoints(@Param("userId") UUID userId, Pageable pageable);
 }
