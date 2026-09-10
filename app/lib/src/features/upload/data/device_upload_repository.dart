@@ -284,8 +284,9 @@ class DeviceUploadRepository implements UploadRepository {
     List<Map<String, Object?>> uploadTargets,
     UploadPhoto primary,
   ) => {
-    'placeId': _numericId(draft.place.id, 'plc_'),
-    if (draft.eventId != null) 'eventId': _numericId(draft.eventId!, 'evt_'),
+    'placeId': int.parse(_numericId(draft.place.id, 'plc_')),
+    if (draft.eventId != null)
+      'eventId': int.parse(_numericId(draft.eventId!, 'evt_')),
     'content': [
       draft.title,
       draft.description,
@@ -306,9 +307,6 @@ class DeviceUploadRepository implements UploadRepository {
     if (primary.latitude != null) 'lat': primary.latitude,
     if (primary.longitude != null) 'lng': primary.longitude,
   };
-
-  int _numericId(String id, String prefix) =>
-      int.parse(id.replaceFirst(prefix, ''));
 
   UploadResult _toUploadResult(Map<String, Object?> data) {
     final post = jsonMap(data['post']);
