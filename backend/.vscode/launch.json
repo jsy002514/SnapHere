@@ -6,6 +6,13 @@
             "name": "SnapHereApplication",
             "request": "launch",
             "mainClass": "com.snaphere.api.SnapHereApplication",
+            "projectName": "backend"
+        },
+        {
+            "type": "java",
+            "name": "SnapHereApplication",
+            "request": "launch",
+            "mainClass": "com.snaphere.api.SnapHereApplication",
             "projectName": "snaphere-api",
             "cwd": "${workspaceFolder}",
             "envFile": "${workspaceFolder}/../.env",
