@@ -205,3 +205,28 @@
 | DEC-20260908-003 | 2026-09-08 | 사용자 | 확정·실행 요청 | 로컬 변경만 유지 / Git 전략에 따라 커밋·원격 푸시·PR 생성 | 프론트엔드 클린 코드 리팩토링과 회귀 테스트, 관련 결정 로그를 기능 단위 커밋으로 생성하고 원격에 푸시한 뒤 `develop` 대상 PR을 템플릿에 맞춰 생성한다. 브랜치 전략의 허용 type에 맞추기 위해 아직 원격에 게시되지 않은 `refactor/frontend-clean-code`를 `chore/frontend-clean-code`로 변경한다. 사용자 소유 `backend/.vscode/launch.json`과 루트 `README.md`는 커밋에서 제외한다. PR merge는 수행하지 않는다. | 사용자가 `docs/09-git-strategy.md`에 따른 커밋·푸시·PR 생성을 명시적으로 요청했다. 현재 브랜치의 `refactor` type은 문서에 정의된 브랜치 type 목록에 없고, 코드 구조 개선에는 `chore` 작업 브랜치와 `refactor(frontend)` 커밋·PR 제목 조합이 가장 가깝다. | Git 브랜치·커밋·GitHub PR·결정 로그 | DEC-20260908-001~002, `docs/09-git-strategy.md` | PR의 대상은 `develop`이며 리뷰·merge는 별도 승인 후 수행한다. |
 
 실행 결과 (2026-09-08): 작업 브랜치를 `chore/frontend-clean-code`로 변경하고 `refactor(frontend): 업로드 흐름 책임 분리`(`409aceb`), `test(frontend): 업로드 선택 한도 회귀 검증`(`15c69cc`), `docs: 프론트엔드 리팩토링 결정 기록`(`f61380e`) 커밋을 생성해 `origin/chore/frontend-clean-code`에 푸시했다. 저장소 PR 템플릿의 작업 영역·작업 내용·테스트 방법·체크리스트·참고 사항을 채워 `develop` 대상 GitHub PR #52(`[refactor](frontend): 프론트엔드 클린 코드 개선`)를 생성했다. 사용자 소유 `backend/.vscode/launch.json`과 루트 `README.md`는 커밋에서 제외했으며 PR은 merge하지 않았다.
+
+## Android 릴리즈 서명 키
+
+| 결정 ID | 날짜 | 주체 | 상태 | 선택지·배경 | 결정 내용 | 근거 | 영향 범위 | 관련 요구사항 | 대체/비고 |
+|---|---|---|---|---|---|---|---|---|---|
+| DEC-20260909-004 | 2026-09-09 | 사용자 | 확정·실행 요청 | release 빌드의 debug 서명 폴백 유지 / 실제 release 서명 키 생성·연결 | Android release 서명용 PKCS12 keystore를 RSA 4096비트·SHA-256·유효기간 10,000일로 생성하고 alias는 `upload`을 사용한다. 난수 비밀번호와 keystore는 Git 제외 파일인 `app/android/key.properties`와 `app/android/upload-keystore.jks`에만 저장한다. | 사용자가 실제 릴리즈 키 생성을 명시적으로 요청했다. 현재 Gradle 설정은 `key.properties`가 있으면 release signing config를 자동 적용한다. | Android release APK·AAB 서명, Google OAuth release SHA 등록, Play 배포 키 보관 | AUTH-001, Android 배포 | 키와 비밀번호는 로그·문서·커밋에 포함하지 않는다. 키 분실 시 기존 앱 업데이트가 불가능할 수 있으므로 별도 안전한 백업 필요. |
+
+실행 결과 (2026-09-09): release keystore와 난수 비밀번호 설정을 생성했으며, Gradle `signingReport`에서 `Variant: release`, `Config: release`, alias `upload` 및 debug 인증서와 다른 release 인증서가 적용되는 것을 확인했다. 두 비밀 파일은 저장소의 기존 ignore 규칙으로 Git 추적에서 제외된다.
+
+## 마이페이지 로그아웃
+
+| 결정 ID | 날짜 | 주체 | 상태 | 선택지·배경 | 결정 내용 | 근거 | 영향 범위 | 관련 요구사항 | 대체/비고 |
+|---|---|---|---|---|---|---|---|---|---|
+| DEC-20260911-001 | 2026-09-11 | 사용자 | 확정·실행 요청 | 설정 화면에서만 로그아웃 제공 / 마이페이지에도 로그아웃 버튼 제공 | `develop`에서 `feature/frontend-profile-logout` 브랜치를 생성하고, 본인의 마이페이지에서 기존 `AuthController.signOut()` 흐름을 실행하는 로그아웃 버튼을 제공한다. 다른 사용자의 공개 프로필에는 버튼을 노출하지 않는다. | 사용자가 마이페이지의 로그아웃 버튼 부재를 제보하고 새 브랜치에서 구현하도록 요청했다. 기존 인증·라우팅 계약을 재사용하면 백엔드나 API 변경 없이 일관된 로그아웃이 가능하다. | Flutter 마이페이지 UI·인증 상태·위젯 테스트 | AUTH-005, USER-001 | 백엔드·API·DB 계약과 설정 화면의 기존 로그아웃 기능은 변경하지 않는다. |
+| DEC-20260911-002 | 2026-09-11 | 사용자 | 확정·실행 요청 | 중복된 문자열·정수 ID 변환 함수 유지 / 단일 정수 변환 함수로 통합 | 업로드 저장소에 중복 정의된 `_numericId`를 정수 반환 함수 하나로 통합한다. JSON 요청 본문에는 정수를 사용하고, `ApiClient`가 문자열을 요구하는 URL 쿼리에서는 변환 결과를 문자열로 직렬화한다. | 사용자가 전체 분석과 테스트를 막는 중복 정의·타입 오류 수정을 요청했다. 백엔드 DTO는 숫자 ID를 받고 HTTP 쿼리는 문자열로 전달되므로 전송 위치별 타입을 보존해야 한다. | Flutter 업로드 태그 추천·등급 미리보기·게시글 생성 요청 변환 | API-CMU-011, API-PST-002~003 | API·DB 계약은 변경하지 않으며 `docs/08-spec-changelog.md` 적용 대상이 아니다. |
+
+## 운영 서버 Base URL 연동
+
+| 결정 ID | 날짜 | 주체 | 상태 | 선택지·배경 | 결정 내용 | 근거 | 영향 범위 | 관련 요구사항 | 대체/비고 |
+|---|---|---|---|---|---|---|---|---|---|
+| DEC-20260912-001 | 2026-09-12 | 사용자 | 확정·실행 요청 | 로컬 서버를 기본값으로 유지 / 인프라 제공 고정 IP를 기본 API 서버로 사용 | Flutter의 기본 `API_BASE_URL`을 `http://3.37.39.98`로 변경하고 연결된 Android 실기기에 설치해 실제 API 연동을 검증한다. 서버가 현재 HTTP만 제공하므로 평문 HTTP 허용은 debug 빌드에만 적용하고 release 보안 정책은 유지한다. | 사용자가 인프라 담당자가 제공한 고정 IP로 Base URL을 변경하고 실기기 테스트하도록 요청했다. 사전 점검에서 `GET /actuator/health`와 `GET /api/v1/places`가 80번 포트에서 200으로 응답했으며 443·8080번 포트는 외부에서 응답하지 않았다. | Flutter 기본 API endpoint, Android debug 네트워크 보안 설정, 실기기 검증 | SYS-002, 현재 Flutter API 연동 전체 | API·DB 계약 변경은 없어 `docs/08-spec-changelog.md` 적용 대상이 아니다. release 적용 전 HTTPS endpoint 확정이 필요하다. |
+| DEC-20260912-002 | 2026-09-12 | 사용자 | 확정·실행 요청 | 현재 작업 트리에만 유지 / Git 전략에 따라 분리 커밋·원격 푸시·PR 생성 | 운영 서버 Base URL 변경, debug 실기기 연동 설정, 회귀 테스트와 결정 기록만 `chore/frontend-api-base-url` 브랜치에 선택적으로 커밋하고 원격에 푸시한 뒤 `develop` 대상 PR을 저장소 템플릿에 맞춰 생성한다. 현재 작업 트리의 프로필·업로드·Gradle·IDE·README 관련 기존 변경은 커밋에서 제외하고 PR은 merge하지 않는다. | 사용자가 Git 전략에 따른 커밋·푸시·PR 생성을 명시적으로 요청했다. 현재 브랜치와 작업 트리에 다른 작업이 섞여 있어 이번 서버 연동 변경만 선택적으로 분리해야 한다. | Git 브랜치·커밋·GitHub PR·결정 로그 | DEC-20260912-001, `docs/09-git-strategy.md`, `docs/commit-convention.md` | PR 대상은 `develop`이며 리뷰·merge는 별도 승인 후 수행한다. |
+| DEC-20260912-003 | 2026-09-12 | 사용자 | 확정·실행 요청 | 서버 연동 변경만 선택 커밋 / 현재 브랜치의 모든 미커밋 사항을 기능별로 전부 커밋 | `chore/frontend-api-base-url`에 남아 있는 프로필 로그아웃, 업로드 ID 직렬화, Android 빌드 도구 설정, 백엔드 VS Code 실행 설정, 루트 README, 운영 서버 연동 및 전체 결정 로그를 Git 전략에 따라 기능별 커밋으로 모두 생성해 푸시하고 하나의 `develop` 대상 PR에 포함한다. 비밀값과 Git 제외 빌드 산출물은 포함하지 않으며 PR은 merge하지 않는다. | 사용자가 현재 브랜치의 미커밋 사항도 전부 커밋·푸시하도록 추가로 명시했다. 사전 검사에서 대상 파일에 API 키·비밀번호·개인 키가 없고 APK 등 빌드 산출물은 ignore 상태임을 확인했다. | Flutter 기능·테스트, Android 빌드 설정, 백엔드 IDE 설정, 루트 문서, Git 브랜치·커밋·GitHub PR | DEC-20260911-001~002, DEC-20260912-001~002, `docs/09-git-strategy.md`, `docs/commit-convention.md` | DEC-20260912-002의 선택 커밋 범위를 대체한다. 현재 브랜치 이름은 최초 서버 연동 작업 기준으로 유지한다. |
+
+실행 결과 (2026-09-12): `http://3.37.39.98`의 Actuator와 공개 장소 API가 200으로 응답하는 것을 확인했다. 변경된 기본값으로 debug APK를 `SM S938N`(Android 16, API 36)에 설치해 앱 실행과 서버 기반 지역 목록 표시를 검증했으며 cleartext·소켓·Flutter 예외는 발생하지 않았다. `dart format lib test`, `flutter analyze`, 구분되지 않은 단위·위젯 통합 `flutter test`를 통과했고 테스트 134개가 모두 성공했다. 전체 `dart format .`은 로컬 SDK 환경에서 출력 없이 정지해 중단하고 소스 디렉터리 대상으로 재실행했다.
