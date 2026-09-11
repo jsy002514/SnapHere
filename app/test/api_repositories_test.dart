@@ -7,6 +7,7 @@ import 'package:snap_here/src/core/network/api_client.dart';
 import 'package:snap_here/src/features/community/data/api_community_repository.dart';
 import 'package:snap_here/src/features/community/domain/community_models.dart';
 import 'package:snap_here/src/features/explore/data/api_explore_repository.dart';
+import 'package:snap_here/src/features/upload/data/device_upload_repository.dart';
 
 void main() {
   test(
@@ -92,6 +93,51 @@ void main() {
     expect(regions.single.name, '서울');
     expect(regions.single.postCount, 12);
     expect(regions.single.contributorCount, 4);
+  });
+
+  test('upload repository serializes numeric IDs for query and JSON', () async {
+    final requests = <http.Request>[];
+    final client = MockClient((request) async {
+      requests.add(request);
+      if (request.url.path.endsWith('/tags/suggestions')) {
+        return _json({
+          'data': [
+            {'name': '서울'},
+          ],
+        });
+      }
+      if (request.url.path.endsWith('/posts/tier-preview')) {
+        return _json({
+          'data': {'tier': 'HIGH'},
+        });
+      }
+      fail('unexpected request: ${request.url}');
+    });
+    final repository = DeviceUploadRepository(
+      accessToken: 'test-token',
+      httpClient: client,
+      api: ApiClient(baseUrl: 'http://test', client: client),
+    );
+
+    final tags = await repository.suggestTags(
+      placeId: 'plc_42',
+      eventId: 'evt_7',
+    );
+    final preview = await repository.previewTier(
+      placeId: 'plc_42',
+      eventId: 'evt_7',
+      fromCamera: false,
+    );
+
+    expect(tags, ['서울']);
+    expect(preview?.tier, 'HIGH');
+    expect(requests.first.url.queryParameters, {
+      'placeId': '42',
+      'eventId': '7',
+    });
+    final previewBody = jsonDecode(requests.last.body) as Map<String, dynamic>;
+    expect(previewBody['placeId'], 42);
+    expect(previewBody['eventId'], 7);
   });
 }
 

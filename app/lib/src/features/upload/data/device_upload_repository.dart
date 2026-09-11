@@ -150,8 +150,10 @@ class DeviceUploadRepository implements UploadRepository {
         await _api.get(
           '/tags/suggestions',
           query: {
-            'placeId': _numericId(placeId, 'plc_'),
-            'eventId': ?eventId == null ? null : _numericId(eventId, 'evt_'),
+            'placeId': _numericId(placeId, 'plc_').toString(),
+            'eventId': ?eventId == null
+                ? null
+                : _numericId(eventId, 'evt_').toString(),
             'query': ?query,
           },
           accessToken: token,
@@ -184,9 +186,8 @@ class DeviceUploadRepository implements UploadRepository {
           await _api.post(
             '/posts/tier-preview',
             body: {
-              'placeId': int.parse(_numericId(placeId, 'plc_')),
-              if (eventId != null)
-                'eventId': int.parse(_numericId(eventId, 'evt_')),
+              'placeId': _numericId(placeId, 'plc_'),
+              if (eventId != null) 'eventId': _numericId(eventId, 'evt_'),
               'source': fromCamera ? 'CAMERA' : 'GALLERY',
               'takenAt': ?takenAt?.toUtc().toIso8601String(),
               'lat': ?lat,
@@ -200,9 +201,6 @@ class DeviceUploadRepository implements UploadRepository {
       return null;
     }
   }
-
-  String _numericId(String value, String prefix) =>
-      value.replaceFirst(prefix, '');
 
   @override
   Future<UploadResult> createPost(UploadDraft draft) async {
