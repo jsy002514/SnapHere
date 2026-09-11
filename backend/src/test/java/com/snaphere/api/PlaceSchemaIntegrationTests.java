@@ -37,6 +37,10 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
 @SpringBootTest(properties = {
+        // stub-data 부재 시 StubPlaceData(matchIfMissing)와 JpaEventSnapshotReader(matchIfMissing)가
+        // 동시에 EventSnapshotReader 빈을 등록해 NoUniqueBeanDefinitionException 이 난다.
+        // 이 테스트는 실 DB 로 도니 Jpa 리더만 쓰도록 명시한다.
+        "snaphere.stub-data=false",
         "snaphere.jobs.enabled=false",
         "snaphere.jobs.place-sync-cron=-",
         "snaphere.jobs.view-flush-cron=-"
