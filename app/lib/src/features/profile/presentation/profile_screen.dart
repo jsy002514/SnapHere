@@ -21,6 +21,7 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   int _revision = 0;
+  bool _isSigningOut = false;
 
   @override
   Widget build(BuildContext context) {
@@ -98,6 +99,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     : _ProfileHeader(profile: data, own: own),
               ),
             ),
+            if (own)
+              SliverToBoxAdapter(
+                child: ColoredBox(
+                  color: Colors.white,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                    child: OutlinedButton.icon(
+                      onPressed: _isSigningOut ? null : _signOut,
+                      icon: _isSigningOut
+                          ? const SizedBox.square(
+                              dimension: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.logout, size: 18),
+                      label: const Text('로그아웃'),
+                    ),
+                  ),
+                ),
+              ),
             if (profile.value case final data?) ...[
               SliverToBoxAdapter(
                 child: own
@@ -188,6 +208,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _signOut() async {
+    if (_isSigningOut) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _isSigningOut = true);
+    try {
+      await ref.read(authControllerProvider.notifier).signOut();
+    } on Object catch (error) {
+      messenger.showSnackBar(SnackBar(content: Text('$error')));
+    } finally {
+      if (mounted) setState(() => _isSigningOut = false);
+    }
   }
 }
 

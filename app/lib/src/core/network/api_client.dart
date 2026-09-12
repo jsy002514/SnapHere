@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 
 const defaultApiBaseUrl = String.fromEnvironment(
   'API_BASE_URL',
-  defaultValue: 'http://localhost:8080',
+  defaultValue: 'http://3.37.39.98',
 );
 
 class ApiException implements Exception {

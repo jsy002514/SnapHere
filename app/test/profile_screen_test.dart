@@ -14,6 +14,8 @@ import 'package:snap_here/src/features/profile/domain/profile_models.dart';
 import 'package:snap_here/src/features/profile/presentation/profile_screen.dart';
 
 class ReadyAuth extends AuthController {
+  int signOutCallCount = 0;
+
   @override
   Future<AuthSession?> build() async => const AuthSession.authenticated(
     accessToken: 'test',
@@ -25,6 +27,11 @@ class ReadyAuth extends AuthController {
       needsProfileSetup: false,
     ),
   );
+
+  @override
+  Future<void> signOut() async {
+    signOutCallCount++;
+  }
 }
 
 class ProfileStub extends ApiProfileRepository {
@@ -85,6 +92,12 @@ void main() {
           builder: (_, _) =>
               const Scaffold(body: Text('followers-destination')),
         ),
+        GoRoute(
+          path: '/settings',
+          builder: (_, _) => const Scaffold(
+            body: Column(children: [Text('로그아웃'), Text('계정 삭제')]),
+          ),
+        ),
       ],
     );
     addTearDown(router.dispose);
@@ -110,9 +123,26 @@ void main() {
     expect(find.text('1,342 팔로워'), findsOneWidget);
     expect(tester.getSize(find.byType(ProfileAvatar)), const Size(64, 64));
     expect(find.text('아직 게시글이 없어요'), findsOneWidget);
+    expect(find.widgetWithText(OutlinedButton, '로그아웃'), findsOneWidget);
     await tester.tap(find.text('첫 사진 올리기'));
     await tester.pumpAndSettle();
     expect(find.text('upload-destination'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('own profile logout delegates to the auth controller', (
+    tester,
+  ) async {
+    await mount(tester);
+    final context = tester.element(find.byType(ProfileScreen));
+    final container = ProviderScope.containerOf(context);
+    final controller =
+        container.read(authControllerProvider.notifier) as ReadyAuth;
+
+    await tester.tap(find.widgetWithText(OutlinedButton, '로그아웃'));
+    await tester.pump();
+
+    expect(controller.signOutCallCount, 1);
     expect(tester.takeException(), isNull);
   });
 
@@ -179,6 +209,7 @@ void main() {
       ),
     );
     expect(find.byTooltip('설정'), findsNothing);
+    expect(find.text('로그아웃'), findsNothing);
     final cards = find.byType(ProfilePostCard);
     expect(cards, findsNWidgets(2));
     expect(tester.getTopLeft(cards.first).dy, tester.getTopLeft(cards.last).dy);
