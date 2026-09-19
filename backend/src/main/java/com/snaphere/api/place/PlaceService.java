@@ -69,6 +69,26 @@ public class PlaceService {
         return new PlaceDtos.NearbyPlaceResult(exact, candidates, exact == null, radiusM, nearestDistance);
     }
 
+    public PlaceDtos.NearestPlaceMatchResult nearestGoogleMatch(
+            PlaceDtos.NearestPlaceMatchRequest request, CurrentUser actor) {
+        validCoordinate(request.lat(), request.lng());
+        GoogleGeocodingClient.ResolvedPlace resolved = geocoder.nearest(request.lat(), request.lng());
+        List<PlaceDtos.PlaceSummary> candidates = places.nearby(
+                resolved.lat(), resolved.lng(), 20_000, 50, actor.userId());
+        String googleText = normalizeSearchText(firstNonBlank(
+                resolved.suggestedName(), resolved.formattedAddress()));
+        List<PlaceDtos.PlaceSummary> ordered = candidates.stream()
+                .sorted(java.util.Comparator
+                        .comparing((PlaceDtos.PlaceSummary place) ->
+                                !matchesGoogleText(place, googleText))
+                        .thenComparing(place -> place.distanceM() == null
+                                ? Integer.MAX_VALUE : place.distanceM()))
+                .limit(20)
+                .toList();
+        return new PlaceDtos.NearestPlaceMatchResult(
+                resolved.suggestedName(), resolved.formattedAddress(), ordered);
+    }
+
     public PlaceDtos.PlaceDetail detail(String externalId, String acceptLanguage, CurrentUser actor) {
         long id = ExternalIds.parse(externalId, "plc", ErrorCode.PLACE_NOT_FOUND);
         PlaceRepository.PlaceRecord place = places.placeRecord(id);
@@ -196,6 +216,23 @@ public class PlaceService {
         if (first.startsWith("ja")) return "ja";
         if (first.startsWith("zh")) return first.contains("cn") || first.contains("hans") ? "zh-CN" : "zh-TW";
         return "ko";
+    }
+
+    private static boolean matchesGoogleText(PlaceDtos.PlaceSummary place, String googleText) {
+        if (googleText.isEmpty()) return false;
+        String title = normalizeSearchText(place.title());
+        String address = normalizeSearchText(place.addr1());
+        return (!title.isEmpty() && (googleText.contains(title) || title.contains(googleText)))
+                || (!address.isEmpty() && googleText.contains(address));
+    }
+
+    private static String normalizeSearchText(String value) {
+        return value == null ? "" : value.replaceAll("\\s+", "").toLowerCase(Locale.ROOT);
+    }
+
+    private static String firstNonBlank(String... values) {
+        for (String value : values) if (value != null && !value.isBlank()) return value;
+        return "";
     }
 
     private static <T> CursorPage<T> page(List<T> rows, int size, java.util.function.ToLongFunction<T> id) {

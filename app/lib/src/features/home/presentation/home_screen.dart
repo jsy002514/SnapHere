@@ -26,8 +26,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   final _sheet = DraggableScrollableController();
   int? _areaCode;
   double _extent = .58;
-  bool _locating = false;
-  bool _locationGranted = false;
   MapViewport? _viewport;
   double _zoom = koreaCamera.zoom;
   int _viewportGeneration = 0;
@@ -110,29 +108,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
-  Future<void> _locate() async {
-    if (_locating) return;
-    setState(() => _locating = true);
-    try {
-      final position = await ref.read(homeLocationProvider).currentPosition();
-      if (!mounted) return;
-      setState(() {
-        _areaCode = null;
-        _locationGranted = true;
-      });
-      await WidgetsBinding.instance.endOfFrame;
-      if (!mounted) return;
-      await _map?.animateCamera(CameraUpdate.newLatLngZoom(position, 12));
-    } on Object catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('$error')));
-      }
-    } finally {
-      if (mounted) setState(() => _locating = false);
-    }
-  }
-
   Future<void> _chooseRegion(List<RegionOverview> regions) async {
     final selected = await showModalBottomSheet<RegionOverview>(
       context: context,
@@ -148,14 +123,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   '지역 선택',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.my_location),
-                title: const Text('현재 위치로 이동'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _locate();
-                },
               ),
               for (final region in regions)
                 ListTile(
@@ -234,7 +201,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       },
                       onCameraMove: _cameraMoved,
                       onCameraIdle: _syncViewport,
-                      myLocationEnabled: _locationGranted,
                       onTap: (_) {
                         if (selected != null) setState(() => _areaCode = null);
                       },
@@ -369,29 +335,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   Positioned(
                     right: 16,
                     bottom: 20,
-                    child: Column(
-                      children: [
-                        FloatingActionButton.small(
-                          heroTag: 'regions',
-                          tooltip: '지역 목록',
-                          onPressed: () => _chooseRegion(items),
-                          child: const Icon(Icons.list),
-                        ),
-                        const SizedBox(height: 8),
-                        FloatingActionButton.small(
-                          heroTag: 'locate',
-                          tooltip: '현재 위치',
-                          onPressed: _locating ? null : _locate,
-                          child: _locating
-                              ? const SizedBox.square(
-                                  dimension: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.my_location),
-                        ),
-                      ],
+                    child: FloatingActionButton.small(
+                      heroTag: 'regions',
+                      tooltip: '지역 목록',
+                      onPressed: () => _chooseRegion(items),
+                      child: const Icon(Icons.list),
                     ),
                   ),
                 if (selected != null)

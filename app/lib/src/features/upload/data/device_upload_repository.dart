@@ -1,13 +1,24 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
+import 'package:image/image.dart' as image;
 import 'package:photo_manager/photo_manager.dart';
 import 'package:snap_here/src/core/network/api_client.dart';
 import 'package:snap_here/src/features/upload/domain/upload_failure.dart';
 import 'package:snap_here/src/features/upload/domain/upload_models.dart';
 import 'package:snap_here/src/features/upload/domain/upload_repository.dart';
+
+Uint8List? _sanitizeUploadImage(Uint8List bytes) {
+  var decoded = image.decodeImage(bytes);
+  if (decoded == null) return null;
+  decoded = image.bakeOrientation(decoded);
+  decoded.exif.clear();
+  decoded.textData?.clear();
+  return image.encodeJpg(decoded, quality: 95);
+}
 
 class UploadPermissionException implements Exception {
   const UploadPermissionException(this.message);
@@ -81,21 +92,15 @@ class DeviceUploadRepository implements UploadRepository {
         ? (latitude: photo.latitude!, longitude: photo.longitude!)
         : await _currentCoordinates();
     final result = jsonMap(
-      await _api.get(
-        '/places/nearby',
-        query: {
-          'lat': '${position.latitude}',
-          'lng': '${position.longitude}',
-          'radiusM': '1500',
-        },
+      await _api.post(
+        '/places/nearest-match',
+        body: {'lat': position.latitude, 'lng': position.longitude},
         accessToken: accessToken,
       ),
     );
-    final values = <Map<String, Object?>>[
-      if (result['exactMatch'] is Map) jsonMap(result['exactMatch']),
-      ...jsonMapList(result['candidates']),
-    ];
-    return values.map(_place).toList(growable: false);
+    return jsonMapList(result['candidates'])
+        .map(_place)
+        .toList(growable: false);
   }
 
   @override
@@ -192,10 +197,7 @@ class DeviceUploadRepository implements UploadRepository {
             body: {
               'placeId': _numericId(placeId, 'plc_'),
               if (eventId != null) 'eventId': _numericId(eventId, 'evt_'),
-              'source': fromCamera ? 'CAMERA' : 'GALLERY',
-              'takenAt': ?takenAt?.toUtc().toIso8601String(),
-              'lat': ?lat,
-              'lng': ?lng,
+              'source': fromCamera ? 'CAMERA' : 'ALBUM',
             },
             accessToken: token,
           ),
@@ -222,10 +224,6 @@ class DeviceUploadRepository implements UploadRepository {
       final primary = photos.firstWhere(
         (photo) => photo.id == draft.primaryPhoto.id,
       );
-      if (primary.source == UploadPhotoSource.camera &&
-          primary.takenAt == null) {
-        throw const UploadFailure(UploadFailureReason.invalidTakenAt);
-      }
       final files = await Future.wait(photos.map(_fileInfo));
       stage = _UploadStage.preparation;
       final uploadTargets = await _issueUploadTargets(files, token);
@@ -344,10 +342,6 @@ class DeviceUploadRepository implements UploadRepository {
     ],
     'tagNames': draft.requestTagNames,
     'source': primary.source == UploadPhotoSource.camera ? 'CAMERA' : 'ALBUM',
-    if (primary.source == UploadPhotoSource.camera)
-      'takenAt': primary.takenAt!.toUtc().toIso8601String(),
-    if (primary.latitude != null) 'lat': primary.latitude,
-    if (primary.longitude != null) 'lng': primary.longitude,
   };
 
   int _numericId(String id, String prefix) {
@@ -458,15 +452,25 @@ class DeviceUploadRepository implements UploadRepository {
   ) async {
     final path = photo.filePath;
     if (path == null) throw const UploadPermissionException('사진 원본을 읽지 못했습니다.');
-    final bytes = await File(path).readAsBytes();
-    final extension = path.toLowerCase().split('.').last;
-    final mimeType = switch (extension) {
-      'png' => 'image/png',
-      'webp' => 'image/webp',
-      'heic' => 'image/heic',
-      _ => 'image/jpeg',
-    };
-    return (bytes: bytes, mimeType: mimeType);
+    var sanitized = await compute(
+      _sanitizeUploadImage,
+      await File(path).readAsBytes(),
+    );
+    if (sanitized == null && photo.source == UploadPhotoSource.deviceLibrary) {
+      final entity = await AssetEntity.fromId(photo.id);
+      final rendered = await entity?.thumbnailDataWithSize(
+        const ThumbnailSize(4096, 4096),
+        quality: 95,
+      );
+      if (rendered != null) {
+        sanitized = await compute(_sanitizeUploadImage, rendered);
+      }
+    }
+    if (sanitized == null) {
+      throw const UploadPermissionException('사진을 안전한 형식으로 변환하지 못했습니다.');
+    }
+    // 픽셀만 새 JPEG로 인코딩해 EXIF/GPS/촬영시각 메타데이터를 제거한다.
+    return (bytes: sanitized, mimeType: 'image/jpeg');
   }
 
   Future<UploadPhoto> _resolveOriginal(UploadPhoto photo) async {

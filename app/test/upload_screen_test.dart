@@ -540,15 +540,15 @@ void main() {
     );
   });
 
-  testWidgets('촬영 좌표가 없으면 게시 전에 낮음 등급 이유를 알린다', (tester) async {
+  testWidgets('촬영 좌표가 없어도 위치 등급 경고를 표시하지 않는다', (tester) async {
     await tester.binding.setSurfaceSize(const Size(412, 893));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(_wrap(_StubUploadRepository(cameraPhoto: true)));
     await tester.pumpAndSettle();
     await _goToForm(tester);
 
-    expect(find.byKey(const Key('camera-location-warning')), findsOneWidget);
-    expect(find.textContaining('낮음 등급으로 등록됩니다'), findsOneWidget);
+    expect(find.byKey(const Key('camera-location-warning')), findsNothing);
+    expect(find.textContaining('낮음 등급으로 등록됩니다'), findsNothing);
   });
 
   testWidgets('시스템 뒤로가기는 작성 단계부터 한 단계씩 이동한다', (tester) async {
