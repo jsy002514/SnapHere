@@ -1,0 +1,528 @@
+// SnapHere — 데이터 설계 정본 (2026-09-05)
+// Percona PostgreSQL 17.10.2 + PostGIS 3.6.2 (커스텀 이미지) · dbdiagram.io 붙여넣기용
+// 사용자 제공 ERD 기준 28개 테이블. tier_logs와 구현 보조 테이블은 정본에서 제외한다.
+// 필요한 확장: postgis, pg_trgm
+
+Project SnapHere {
+  database_type: 'PostgreSQL'
+  Note: '시각은 timestamptz/UTC 저장, 서버 해석은 Asia/Seoul. 좌표는 geography(Point,4326).'
+}
+
+enum provider { GOOGLE }
+enum user_role { USER ADMIN }
+enum user_status { ACTIVE SUSPENDED WITHDRAWN }
+enum content_action { KEEP_ANONYMIZED DELETE_ALL }
+enum device_platform { ANDROID IOS }
+enum place_type { OFFICIAL USER }
+enum post_tier { HIGH MEDIUM LOW }
+enum post_source { CAMERA ALBUM }
+enum post_status { ACTIVE BLINDED DELETED }
+enum comment_status { ACTIVE DELETED }
+enum like_target { POST COMMENT }
+enum bookmark_target { POST PLACE }
+enum badge_type { EVENT AREA COMPLETION RECORD }
+enum event_source { TOURAPI MANUAL }
+enum heatmap_period { LAST_1H LAST_24H WEEKLY MONTHLY }
+enum post_popularity_period { HOURS_24 WEEKLY MONTHLY ALL }
+enum ranking_period { DAILY WEEKLY MONTHLY ALL }
+enum notification_type { POST_LIKE FOLLOW BADGE_EARNED SYSTEM }
+enum notification_target { POST USER BADGE NONE }
+enum report_target { POST COMMENT PLACE USER }
+enum report_status { PENDING RESOLVED REJECTED }
+enum sync_result { SUCCESS FAIL PARTIAL }
+
+Table users {
+  user_id              bigint      [pk, increment]
+  provider             provider    [not null, default: 'GOOGLE']
+  provider_user_id     varchar(255) [note: '구글 sub. 탈퇴 시 즉시 NULL']
+  email                varchar(255) [note: '탈퇴 시 즉시 파기']
+  nickname             varchar(20)  [not null, note: '2~20자 · 금칙어 검증']
+  profile_image_url    varchar(500)
+  bio                  varchar(200)
+  locale               varchar(10)  [not null, default: 'ko']
+  role                 user_role    [not null, default: 'USER']
+  status               user_status  [not null, default: 'ACTIVE']
+  upload_blocked_until timestamptz
+  push_like_enabled    boolean      [not null, default: true]
+  push_follow_enabled  boolean      [not null, default: true]
+  push_badge_enabled   boolean      [not null, default: true]
+  badge_count          int          [not null, default: 0]
+  follower_count       int          [not null, default: 0]
+  following_count      int          [not null, default: 0]
+  post_count           int          [not null, default: 0]
+  withdrawn_at         timestamptz
+  purge_scheduled_at   timestamptz
+  restore_key          char(64)     [note: '탈퇴 복구 매칭용 SHA-256 해시']
+  created_at           timestamptz  [not null]
+  updated_at           timestamptz  [not null]
+
+  indexes {
+    (provider, provider_user_id) [unique, name: 'uk_users_provider']
+    nickname [name: 'idx_users_nickname']
+    purge_scheduled_at [name: 'idx_users_purge']
+  }
+}
+
+Table user_devices {
+  device_id   bigint          [pk, increment]
+  user_id     bigint          [not null]
+  fcm_token   varchar(255)
+  platform    device_platform [not null]
+  app_version varchar(20)
+  updated_at  timestamptz     [not null]
+
+  indexes {
+    (user_id, fcm_token) [unique, name: 'uk_devices_token']
+  }
+}
+
+Table refresh_tokens {
+  token_hash char(64)    [pk, note: '원문이 아닌 SHA-256 해시']
+  user_id    bigint      [not null]
+  device_id  bigint
+  expires_at timestamptz [not null]
+  revoked_at timestamptz
+
+  indexes { user_id [name: 'idx_refresh_user'] }
+}
+
+Table account_deletion_logs {
+  log_id         bigint         [pk, increment]
+  user_id        bigint         [not null]
+  reason         varchar(500)
+  content_action content_action [not null]
+  deleted_at     timestamptz    [not null]
+  purged_at      timestamptz
+}
+
+Table follows {
+  follower_id  bigint      [not null]
+  following_id bigint      [not null]
+  created_at   timestamptz [not null]
+
+  indexes {
+    (follower_id, following_id) [pk]
+    following_id [name: 'idx_follows_following']
+  }
+}
+
+Table regions {
+  area_code                     int          [pk, note: 'TourAPI areaCode']
+  name_ko                       varchar(50)  [not null]
+  name_en                       varchar(50)  [not null]
+  representative_image_url      varchar(500)
+  default_event_verify_radius_m int          [not null, default: 2000]
+}
+
+Table sigungu {
+  area_code    int         [not null]
+  sigungu_code int         [not null]
+  name_ko      varchar(50) [not null]
+  name_en      varchar(50)
+
+  indexes { (area_code, sigungu_code) [pk] }
+}
+
+Table places {
+  place_id        bigint                [pk, increment]
+  place_type      place_type            [not null]
+  content_id      bigint                [unique, note: 'TourAPI contentId. USER 장소는 NULL']
+  content_type_id int
+  title           varchar(200)          [not null]
+  addr1           varchar(300)
+  geom            geography(Point,4326) [note: '좌표가 없으면 NULL']
+  verify_radius_m int                   [not null]
+  area_code       int                   [not null]
+  sigungu_code    int                   [note: 'sigungu 복합 참조']
+  has_coordinate  boolean               [not null, default: true]
+  post_count      int                   [not null, default: 0]
+  visit_count     int                   [not null, default: 0]
+  view_count      int                   [not null, default: 0]
+  created_by      bigint
+  created_at      timestamptz           [not null]
+
+  indexes {
+    geom [name: 'gix_places_geom', note: 'GIST']
+    (area_code, place_type) [name: 'idx_places_area_type']
+    (title, addr1) [name: 'gin_places_title', note: 'pg_trgm GIN']
+  }
+}
+
+Table place_details {
+  place_id      bigint       [not null]
+  language_code varchar(10)  [not null, default: 'ko']
+  overview      text
+  tel           varchar(50)
+  homepage      varchar(500)
+  use_time      varchar(500)
+  rest_date     varchar(200)
+
+  indexes { (place_id, language_code) [pk] }
+}
+
+Table posts {
+  post_id                bigint        [pk, increment]
+  user_id                bigint        [not null]
+  place_id               bigint        [not null]
+  event_id               bigint
+  content                text
+  original_language_code varchar(10)
+  tier                   post_tier     [not null]
+  lat                    numeric(10,7)
+  lng                    numeric(10,7)
+  taken_at               timestamptz
+  source                 post_source   [not null]
+  area_code              int           [not null]
+  like_count             int           [not null, default: 0]
+  comment_count          int           [not null, default: 0]
+  view_count             int           [not null, default: 0]
+  status                 post_status   [not null, default: 'ACTIVE']
+  created_at             timestamptz   [not null]
+  updated_at             timestamptz   [not null]
+  deleted_at             timestamptz
+
+  indexes {
+    (area_code, created_at) [name: 'idx_posts_area_created', note: "WHERE status = 'ACTIVE'"]
+    (place_id, created_at) [name: 'idx_posts_place']
+    (user_id, created_at) [name: 'idx_posts_user']
+    event_id [name: 'idx_posts_event']
+    (status, tier, created_at) [name: 'idx_posts_ranking']
+  }
+}
+
+Table post_images {
+  post_image_id bigint       [pk, increment]
+  post_id       bigint       [not null]
+  image_key     varchar(500) [not null]
+  thumbnail_url varchar(500)
+  aspect_ratio  numeric(5,3)
+  sort_order    smallint     [not null, note: '0이 대표 사진. 최대 4장']
+
+  indexes { (post_id, sort_order) [unique, name: 'uk_post_images_order'] }
+}
+
+Table comments {
+  comment_id bigint         [pk, increment]
+  post_id    bigint         [not null]
+  user_id    bigint         [not null]
+  parent_id  bigint
+  content    varchar(1000)  [not null]
+  like_count int            [not null, default: 0]
+  status     comment_status [not null, default: 'ACTIVE']
+  created_at timestamptz    [not null]
+
+  indexes {
+    (post_id, created_at) [name: 'idx_comments_post', note: "WHERE status = 'ACTIVE'"]
+    parent_id [name: 'idx_comments_parent']
+  }
+}
+
+Table likes {
+  user_id     bigint      [not null]
+  target_type like_target [not null]
+  target_id   bigint      [not null]
+  created_at  timestamptz [not null]
+
+  indexes {
+    (user_id, target_type, target_id) [pk]
+    (target_type, target_id) [name: 'idx_likes_target']
+  }
+}
+
+Table bookmarks {
+  user_id     bigint          [not null]
+  target_type bookmark_target [not null]
+  target_id   bigint          [not null]
+  created_at  timestamptz     [not null]
+
+  indexes { (user_id, target_type, target_id) [pk] }
+}
+
+Table tags {
+  tag_id          bigint      [pk, increment]
+  name            varchar(50) [not null]
+  normalized_name varchar(50) [not null, unique]
+  theme_code      varchar(30)
+  usage_count     int         [not null, default: 0]
+}
+
+Table post_tags {
+  post_id      bigint  [not null]
+  tag_id       bigint  [not null]
+  is_locked    boolean [not null, default: false]
+  is_suggested boolean [not null, default: false]
+
+  indexes {
+    (post_id, tag_id) [pk]
+    tag_id [name: 'idx_post_tags_tag']
+  }
+}
+
+Table events {
+  event_id          bigint       [pk, increment]
+  content_id        bigint       [unique]
+  title             varchar(200) [not null]
+  overview          text
+  area_code         int          [not null]
+  place_id          bigint
+  start_date        date         [not null]
+  end_date          date         [not null]
+  thumbnail_url     varchar(500)
+  fixed_tags        jsonb
+  participant_count int          [not null, default: 0]
+  source            event_source [not null]
+  verify_radius_m   int
+
+  indexes {
+    (area_code, start_date, end_date) [name: 'idx_events_area_period']
+    (start_date, end_date) [name: 'idx_events_period']
+  }
+}
+
+Table badges {
+  badge_id       bigint       [pk, increment]
+  code           varchar(50)  [not null, unique]
+  type           badge_type   [not null]
+  name_ko        varchar(50)  [not null]
+  name_en        varchar(50)  [not null]
+  description    varchar(300)
+  icon_url       varchar(500)
+  condition_json jsonb        [not null]
+  event_id       bigint       [unique]
+  area_code      int
+  is_obtainable  boolean      [not null, default: true]
+  available_from timestamptz
+  available_to   timestamptz
+}
+
+Table user_badges {
+  user_id        bigint      [not null]
+  badge_id       bigint      [not null]
+  earned_at      timestamptz [not null]
+  source_post_id bigint
+
+  indexes { (user_id, badge_id) [pk] }
+}
+
+Table visits {
+  visit_id   bigint [pk, increment]
+  user_id    bigint [not null]
+  place_id   bigint [not null]
+  post_id    bigint
+  visited_on date   [not null]
+
+  indexes {
+    (user_id, place_id, visited_on) [unique, name: 'uk_visits_daily']
+    (user_id, visited_on) [name: 'idx_visits_user']
+  }
+}
+
+Table heatmap_cells {
+  cell_id         bigint         [pk, increment]
+  grid_level      smallint       [not null, note: '0~3']
+  lat             numeric(10,7)  [not null]
+  lng             numeric(10,7)  [not null]
+  period          heatmap_period [not null]
+  post_count      int            [not null, default: 0]
+  visit_count     int            [not null, default: 0]
+  user_count      int            [not null, default: 0]
+  top_place_id    bigint
+  sample_post_ids jsonb          [note: '후보 게시글 최대 10개']
+  last_posted_at  timestamptz
+  calculated_at   timestamptz    [not null]
+
+  indexes { (grid_level, period, lat, lng) [unique, name: 'uk_heatmap_cell'] }
+}
+
+Table post_rankings {
+  post_id       bigint                 [not null]
+  period        post_popularity_period [not null]
+  score         numeric(12,4)          [not null]
+  rank_no       int                    [not null]
+  calculated_at timestamptz            [not null]
+
+  indexes {
+    (post_id, period) [pk]
+    (period, rank_no) [name: 'idx_post_rankings_lookup']
+  }
+}
+
+Table region_stats {
+  area_code         int            [not null]
+  period            heatmap_period [not null]
+  post_count        int            [not null, default: 0]
+  contributor_count int            [not null, default: 0]
+
+  indexes { (area_code, period) [pk] }
+}
+
+Table place_rankings {
+  ranking_id    bigint         [pk, increment]
+  place_id      bigint         [not null]
+  area_code     int            [not null]
+  period        ranking_period [not null]
+  theme         varchar(30)    [not null, default: 'ALL']
+  score         numeric(12,4)  [not null]
+  rank_no       int            [not null]
+  previous_rank int
+  calculated_at timestamptz    [not null]
+
+  indexes {
+    (place_id, period, theme) [unique, name: 'uk_rankings_key']
+    (area_code, period, theme, rank_no) [name: 'idx_rankings_lookup']
+  }
+}
+
+Table notifications {
+  notification_id bigint              [pk, increment]
+  recipient_id    bigint              [not null]
+  actor_id        bigint
+  type            notification_type   [not null]
+  target_type     notification_target [not null]
+  target_id       bigint
+  message_key     varchar(100)        [not null]
+  message_params  jsonb
+  is_read         boolean             [not null, default: false]
+  created_at      timestamptz         [not null]
+
+  indexes {
+    (recipient_id, actor_id, type, target_type, target_id) [unique, name: 'uk_notifications_dedup']
+    (recipient_id, is_read) [name: 'idx_notifications_unread', note: 'WHERE is_read = false']
+  }
+}
+
+Table reports {
+  report_id   bigint        [pk, increment]
+  reporter_id bigint        [not null]
+  target_type report_target [not null]
+  target_id   bigint        [not null]
+  reason      varchar(300)  [not null]
+  status      report_status [not null, default: 'PENDING']
+  created_at  timestamptz   [not null]
+
+  indexes {
+    (reporter_id, target_type, target_id) [unique, name: 'uk_reports_dedup']
+    (target_type, target_id) [name: 'idx_reports_target']
+  }
+}
+
+Table sync_logs {
+  sync_id         bigint      [pk, increment]
+  job_type        varchar(50) [not null]
+  area_code       int
+  content_type_id int
+  result          sync_result [not null]
+  count           int         [not null, default: 0]
+  message         varchar(500)
+  created_at      timestamptz [not null]
+}
+
+Table search_logs {
+  log_id      bigint       [pk, increment]
+  keyword     varchar(100) [not null]
+  area_code   int
+  searched_at timestamptz  [not null]
+
+  indexes { (keyword, searched_at) [name: 'idx_search_keyword'] }
+}
+
+Ref: user_devices.user_id > users.user_id
+Ref: refresh_tokens.user_id > users.user_id
+Ref: refresh_tokens.device_id > user_devices.device_id
+Ref: account_deletion_logs.user_id > users.user_id
+Ref: follows.follower_id > users.user_id
+Ref: follows.following_id > users.user_id
+Ref: sigungu.area_code > regions.area_code
+Ref: places.area_code > regions.area_code
+Ref: places.created_by > users.user_id
+Ref: place_details.place_id > places.place_id
+Ref: posts.user_id > users.user_id
+Ref: posts.place_id > places.place_id
+Ref: posts.event_id > events.event_id
+Ref: posts.area_code > regions.area_code
+Ref: post_images.post_id > posts.post_id
+Ref: comments.post_id > posts.post_id
+Ref: comments.user_id > users.user_id
+Ref: comments.parent_id > comments.comment_id
+Ref: likes.user_id > users.user_id
+Ref: bookmarks.user_id > users.user_id
+Ref: post_tags.post_id > posts.post_id
+Ref: post_tags.tag_id > tags.tag_id
+Ref: events.area_code > regions.area_code
+Ref: events.place_id > places.place_id
+Ref: badges.event_id > events.event_id
+Ref: badges.area_code > regions.area_code
+Ref: user_badges.user_id > users.user_id
+Ref: user_badges.badge_id > badges.badge_id
+Ref: user_badges.source_post_id > posts.post_id [delete: set null]
+Ref: post_rankings.post_id > posts.post_id
+Ref: visits.user_id > users.user_id
+Ref: visits.place_id > places.place_id
+Ref: visits.post_id > posts.post_id [delete: set null]
+Ref: heatmap_cells.top_place_id > places.place_id
+Ref: region_stats.area_code > regions.area_code
+Ref: place_rankings.place_id > places.place_id
+Ref: place_rankings.area_code > regions.area_code
+Ref: notifications.recipient_id > users.user_id
+Ref: notifications.actor_id > users.user_id
+Ref: reports.reporter_id > users.user_id
+Ref: sync_logs.area_code > regions.area_code
+Ref: search_logs.area_code > regions.area_code
+
+TableGroup "계정" {
+  users
+  user_devices
+  refresh_tokens
+  account_deletion_logs
+}
+
+TableGroup "소셜" {
+  follows
+}
+
+TableGroup "장소" {
+  regions
+  sigungu
+  places
+  place_details
+}
+
+TableGroup "게시글" {
+  posts
+  post_images
+}
+
+TableGroup "커뮤니티" {
+  comments
+  likes
+  bookmarks
+  tags
+  post_tags
+}
+
+TableGroup "이벤트 · 뱃지" {
+  events
+  badges
+  user_badges
+}
+
+TableGroup "방문 · 집계" {
+  visits
+  post_rankings
+  heatmap_cells
+  region_stats
+  place_rankings
+}
+
+TableGroup "알림 · 운영" {
+  notifications
+  reports
+  sync_logs
+  search_logs
+}
+
+// 다형 참조(likes, bookmarks, reports, notifications)는 애플리케이션에서 대상 존재를 검증한다.
+// places의 (area_code, sigungu_code)는 sigungu 복합 키를 논리적으로 참조한다.
+// 미결정 제안: MAP-025 썸네일 사전 저장, VST-006 저장소, RNK-013 운영자 지정 장소,
+// 신고 대상 범위, BDG-013 earned_count, CMU-019 공유 slug는 후속 결정 전까지 정본 컬럼에 넣지 않는다.
+// SCH-011 최근 검색어는 애플리케이션 Redis에 사용자별 최대 20개·TTL 30일로 저장한다.

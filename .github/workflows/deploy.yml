@@ -1,0 +1,87 @@
+name: Deploy to Lightsail
+
+# 빌드는 여기(러너 램 16GB)에서, 서버는 완성된 jar 만 받아 재시작한다.
+# 2GB 인스턴스에서 Gradle 을 돌리면 OOM 으로 앱까지 같이 죽는다.
+
+on:
+  push:
+    # 이 저장소의 기본 브랜치는 develop 이다. docs/09-git-strategy.md 대로
+    # "배포 가능한 상태가 되면 develop 을 main 에 merge" 하는 흐름을 따른다.
+    # develop push 마다 배포하려면 여기를 develop 으로 바꾼다.
+    branches: [ main ]
+  workflow_dispatch:          # 콘솔에서 수동 실행도 가능하게
+
+concurrency:
+  # 두 배포가 겹쳐 같은 jar 를 동시에 덮어쓰는 것을 막는다.
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    # Gradle 프로젝트가 backend/ 아래에 있다.
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21.0.11'
+          cache: gradle
+
+      - name: Build
+        run: |
+          chmod +x ./gradlew
+          # 테스트는 test.yml 에서 돌린다. 여기서 돌리면 Testcontainers 가
+          # Redis·PostGIS 컨테이너를 받아 띄우느라 느리고, pull 실패로
+          # 멀쩡한 코드의 배포가 깨진다.
+          ./gradlew clean bootJar --no-daemon
+
+      - name: Pick the runnable jar
+        run: |
+          # Spring Boot Gradle 은 foo.jar 와 foo-plain.jar 를 둘 다 만든다.
+          # -plain 은 의존성이 없어서 실행되지 않으므로 반드시 걸러낸다.
+          JAR=$(find build/libs -name '*.jar' ! -name '*-plain.jar' | head -n 1)
+          if [ -z "$JAR" ]; then echo "실행 가능한 jar 를 못 찾았습니다"; exit 1; fi
+          echo "선택된 jar: $JAR"
+          cp "$JAR" app.jar
+          ls -lh app.jar
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.SERVER_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Upload jar
+        run: |
+          scp -i ~/.ssh/deploy_key \
+            app.jar \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/home/${{ secrets.SERVER_USER }}/snaphere/app.jar
+
+      - name: Restart
+        run: |
+          ssh -i ~/.ssh/deploy_key ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+            'cd ~/snaphere && docker compose up -d --build app && docker image prune -f'
+
+      - name: Wait for health
+        run: |
+          # Flyway 마이그레이션까지 끝나야 health 가 UP 이 된다. 최대 3분 기다린다.
+          for i in $(seq 1 36); do
+            CODE=$(curl -s -o /dev/null -w '%{http_code}' \
+              "http://${{ secrets.SERVER_HOST }}/actuator/health" || echo 000)
+            if [ "$CODE" = "200" ]; then echo "정상 기동 확인"; exit 0; fi
+            echo "대기중... ($i/36, 응답 $CODE)"
+            sleep 5
+          done
+          echo "3분 안에 기동하지 못했습니다. 서버에서 로그를 확인하세요:"
+          echo "  ssh snaphere 'cd ~/snaphere && docker compose logs --tail=200 app'"
+          exit 1

@@ -1,0 +1,7 @@
+# 빌드 컨텍스트(~/snaphere)에서 데몬으로 보낼 것을 app.jar 하나로 줄인다.
+#
+# 이 파일이 없으면 docker compose up --build 가 ~/snaphere 전체를 컨텍스트로
+# 보낸다. 그 안에는 .env(DB 비밀번호·JWT 시크릿)와 certbot/conf(TLS 개인키)가
+# 있다. 이미지에 COPY 되지는 않지만, 굳이 도커 데몬까지 보낼 이유가 없다.
+*
+!app.jar

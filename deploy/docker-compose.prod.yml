@@ -1,0 +1,207 @@
+# SnapHere 운영 스택 — Lightsail 2GB 한 대
+#
+# 배치: ~/snaphere/docker-compose.yml  (이 파일을 그 이름으로 복사한다)
+#       그러면 서버에서 docker compose 명령이 -f 없이 그냥 돈다.
+# 실행: docker compose up -d
+#
+# 저장소 루트의 compose.yml(로컬 개발용)과는 별개 파일이다.
+#
+# 2GB 안의 메모리 배분 (합계 약 1.8G + OS 0.25G, 나머지는 스왑 2G 가 받는다)
+#   postgres 560m · app 1000m · redis 192m · nginx 80m
+
+services:
+  postgres:
+    # 로컬 테스트는 postgis/postgis:16-3.4 를 쓴다(tools/local-test/docker-compose.yml).
+    # 운영은 17-3.6 — 메이저 버전이 다르다는 점을 인지할 것. 마이그레이션은
+    # create extension postgis 만 쓰므로 양쪽 모두 동작한다.
+    image: postgis/postgis:17-3.6
+    container_name: snaphere-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      TZ: Asia/Seoul
+      # 한글 정렬·비교를 위해 UTF-8 로 초기화한다. 로컬 compose 와 같은 설정.
+      POSTGRES_INITDB_ARGS: "-E UTF8"
+      # ⚠ 로케일은 initdb 시점에만 정해진다. 나중에 바꾸려면 덤프·복원해야 한다.
+      #   한글 이름 정렬이 필요하면 쿼리에서 COLLATE "ko-KR-x-icu" 를 쓰는 편이
+      #   안전하다 (PG17 은 ICU 를 기본 내장한다).
+    # 포트를 밖으로 열지 않는다. app 컨테이너만 내부 네트워크로 접근한다.
+    # 로컬 compose 는 5433 을 여는 게 맞지만(IDE·DBeaver), 공인 IP 에서는
+    # 여는 순간 몇 시간 안에 무차별 대입이 들어온다.
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    command: >
+      postgres
+      -c shared_buffers=192MB
+      -c work_mem=6MB
+      -c maintenance_work_mem=64MB
+      -c effective_cache_size=512MB
+      -c max_connections=25
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    mem_limit: 560m
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: snaphere-redis
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Seoul
+    # 코드에서 Redis 를 쓰는 곳은 정확히 세 군데다 (인증과는 무관하다 —
+    # 리프레시 토큰은 refresh_tokens 테이블에 있다).
+    #   MapCache            map:response:<ver>:<query>  TTL 60초   날아가도 재계산
+    #   RecentPlaceService  recent:<userId>  ZSET       TTL 30일   날아가도 아쉬운 정도
+    #   ViewCounterService  place:view:<id>             TTL 없음   flush 전이면 손실
+    #
+    #  · volatile-lru — TTL 이 걸린 키만 버린다. 위 셋에 정확히 맞는다:
+    #                   캐시·최근목록(TTL 있음)은 메모리가 차면 버려지고,
+    #                   조회수 카운터(TTL 없음)는 DB flush 까지 보호된다.
+    #                   allkeys-lru 로 두면 카운터까지 버려지고,
+    #                   noeviction 으로 두면 MapCache.put 이 에러를 낸다
+    #                   (catch 가 있어 API 는 안 깨지지만 캐시가 무력화된다).
+    #
+    #  · appendonly — 재시작해도 아직 DB 로 안 옮겨진 조회수가 살아남는다.
+    #                 flush 가 1분마다 도니 최대 1분치라 everysec 로 충분하다.
+    command: >
+      redis-server
+      --maxmemory 128mb
+      --maxmemory-policy volatile-lru
+      --appendonly yes
+      --appendfsync everysec
+      --save 900 1
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    mem_limit: 192m
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: snaphere-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      TZ: Asia/Seoul
+      # application-prod.yml 은 아직 없다. 지금은 아무 효과가 없지만, 나중에
+      # 운영 전용 설정을 추가할 때 compose 를 안 고치도록 미리 둔다.
+      SPRING_PROFILES_ACTIVE: prod
+
+      # ── DB ──────────────────────────────────────────────────────────────
+      # application.yml 은 ${DB_URL} 을 읽지만, SPRING_DATASOURCE_URL 은
+      # spring.datasource.url 을 직접 덮어쓰는 더 높은 우선순위라 이대로 동작한다.
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      # DB 의 max_connections=25 보다 확실히 작게. 커넥션 하나당 서버 메모리를 쓴다.
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "10"
+      SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: "2"
+
+      # ── Redis ───────────────────────────────────────────────────────────
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: "6379"
+
+      # ── Nginx 뒤에 있을 때 ───────────────────────────────────────────────
+      # 이걸 빼면 서버가 만드는 절대 URL 이 http:// 로 나가고,
+      # 로그의 IP 가 전부 nginx 로 찍혀 요청 제한이 의미를 잃는다.
+      SERVER_FORWARD_HEADERS_STRATEGY: NATIVE
+
+      # ── 인증 ────────────────────────────────────────────────────────────
+      # ⚠ 이름 주의. application.yml 은 snaphere.auth.jwt-secret ←
+      #   ${SNAPHERE_JWT_SECRET} 를 읽는다. JWT_SECRET 으로 주면 바인딩되지 않고
+      #   시크릿이 빈 값이 되어 인증 전체가 실패한다.
+      SNAPHERE_JWT_SECRET: ${SNAPHERE_JWT_SECRET}
+      # 같은 이유로 GOOGLE_CLIENT_ID 가 아니라 GOOGLE_OAUTH_CLIENT_ID 다.
+      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID}
+
+      # ── 미디어 (S3) ─────────────────────────────────────────────────────
+      # provider 기본값이 stub 이다. s3 로 바꾸지 않으면 업로드가 계속
+      # 스텁 동작을 해서, 에러 없이 이미지만 안 올라간다.
+      MEDIA_PROVIDER: s3
+      MEDIA_S3_BUCKET: ${MEDIA_S3_BUCKET}
+      MEDIA_S3_REGION: ${AWS_REGION}
+      MEDIA_PUBLIC_BASE_URL: ${MEDIA_PUBLIC_BASE_URL}
+      # AWS SDK 는 이 두 이름을 기본 자격증명 체인에서 직접 읽는다.
+      AWS_REGION: ${AWS_REGION}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+
+      # ── 외부 API ────────────────────────────────────────────────────────
+      TOUR_API_SERVICE_KEY: ${TOUR_API_SERVICE_KEY}
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY}
+
+      # ── 공유 링크 (CMU-020, CMU-021) ────────────────────────────────────
+      SNAPHERE_SHARE_BASE_URL: ${SNAPHERE_SHARE_BASE_URL}
+
+      # ── 배치 ────────────────────────────────────────────────────────────
+      # 분산 락이 없다. 인스턴스를 늘리면 반드시 한 대만 true 로 둘 것.
+      SNAPHERE_JOBS_ENABLED: "true"
+
+      # ── 푸시 (선택) ─────────────────────────────────────────────────────
+      # 비워 두면 FcmPushSender 가 등록되지 않고 로그만 남는다. 알림 생성과
+      # 알림함은 키 없이도 그대로 동작한다. 쓰려면 아래 volumes 도 함께 해제.
+      # SNAPHERE_FIREBASE_CREDENTIALS: /run/secrets/firebase-service-account.json
+
+      # 2GB 안에서 JVM 이 차지할 몫을 고정한다.
+      # SerialGC: vCPU 2개 · 힙 700m 규모에서는 G1 보다 오버헤드가 작다.
+      # ExitOnOutOfMemoryError: 힙이 마르면 좀비 상태로 버티지 말고 죽어서
+      #                          restart 정책으로 새로 뜨게 한다.
+      JAVA_TOOL_OPTIONS: >-
+        -Xms256m
+        -Xmx700m
+        -XX:MaxMetaspaceSize=160m
+        -XX:+UseSerialGC
+        -XX:+ExitOnOutOfMemoryError
+        -Duser.timezone=Asia/Seoul
+    # volumes:
+    #   # Firebase 서비스 계정 키. 저장소에 넣지 않고 서버에만 둔다.
+    #   - ./secrets/firebase-service-account.json:/run/secrets/firebase-service-account.json:ro
+    healthcheck:
+      # Dockerfile 이 curl 을 설치한다. 그 RUN 을 지우면 이 체크가 항상 실패한다.
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      # Flyway 마이그레이션까지 끝나야 UP 이 된다. 첫 기동은 60~90초 걸린다.
+      start_period: 90s
+    mem_limit: 1000m
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: snaphere-nginx
+    restart: unless-stopped
+    # service_healthy 로 묶지 않는다. app 이 뜨는 90초 동안 80 포트가 닫혀 있으면
+    # 배포 중 접속이 "연결 거부"로 보인다. api.conf 가 업스트림을 변수로 두고
+    # 도커 DNS 로 매번 해석하므로, app 이 아직 없어도 nginx 는 뜨고 502 를 낸다.
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./certbot/www:/var/www/certbot:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+    environment:
+      TZ: Asia/Seoul
+    mem_limit: 80m
+
+volumes:
+  # named volume 이라 docker compose down 을 해도 데이터가 살아남는다.
+  # 진짜로 지우려면 docker compose down -v (되돌릴 수 없다)
+  pgdata:
+  redisdata:

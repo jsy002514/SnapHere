@@ -1,0 +1,9 @@
+package com.snaphere.api.auth;
+import com.snaphere.api.common.error.*; import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty; import org.springframework.security.oauth2.core.*; import org.springframework.security.oauth2.jwt.*; import org.springframework.stereotype.Component; import org.springframework.util.StringUtils;
+import java.util.*;
+@Component @ConditionalOnProperty(prefix="snaphere.auth",name="google-client-id")
+class GoogleOidcTokenVerifier implements GoogleTokenVerifier {
+ private final JwtDecoder decoder; private final String audience;
+ GoogleOidcTokenVerifier(AuthProperties properties){ if(!StringUtils.hasText(properties.googleClientId())) throw new IllegalStateException("GOOGLE_OAUTH_CLIENT_ID must be configured"); audience=properties.googleClientId(); NimbusJwtDecoder d=NimbusJwtDecoder.withJwkSetUri("https://www.googleapis.com/oauth2/v3/certs").build(); d.setJwtValidator(new DelegatingOAuth2TokenValidator<>(JwtValidators.createDefaultWithIssuer("https://accounts.google.com"), jwt -> jwt.getAudience().contains(audience) ? OAuth2TokenValidatorResult.success() : OAuth2TokenValidatorResult.failure(new OAuth2Error("aud")))); decoder=d; }
+ public GoogleIdentity verify(String token){ try { Jwt jwt=decoder.decode(token); String sub=jwt.getSubject(), email=jwt.getClaimAsString("email"); if(!StringUtils.hasText(sub)||!StringUtils.hasText(email)) throw new JwtValidationException("missing identity",List.of()); return new GoogleIdentity(sub,email,jwt.getClaimAsString("picture")); } catch(JwtValidationException e){ if(e.getErrors().stream().anyMatch(x->"aud".equals(x.getErrorCode()))) throw new ApiException(ErrorCode.AUTH_AUDIENCE_MISMATCH); throw new ApiException(ErrorCode.AUTH_INVALID_GOOGLE_TOKEN); } catch(JwtException e){throw new ApiException(ErrorCode.AUTH_INVALID_GOOGLE_TOKEN);} }
+}

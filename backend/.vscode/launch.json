@@ -1,0 +1,30 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "SnapHereApplication",
+            "request": "launch",
+            "mainClass": "com.snaphere.api.SnapHereApplication",
+            "projectName": "backend"
+        },
+        {
+            "type": "java",
+            "name": "SnapHereApplication",
+            "request": "launch",
+            "mainClass": "com.snaphere.api.SnapHereApplication",
+            "projectName": "snaphere-api",
+            "cwd": "${workspaceFolder}",
+            "envFile": "${workspaceFolder}/../.env",
+            "preLaunchTask": "backend: classes",
+            "classPaths": [
+                "$Runtime",
+                "!${workspaceFolder}/bin/main",
+                "${workspaceFolder}/build/classes/java/main",
+                "${workspaceFolder}/build/resources/main"
+            ],
+            "shortenCommandLine": "argfile",
+            "console": "integratedTerminal"
+        }
+    ]
+}

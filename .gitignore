@@ -16,6 +16,8 @@ eggs/
 .eggs/
 lib/
 lib64/
+!app/lib/
+!app/lib/**
 parts/
 sdist/
 var/
@@ -216,3 +218,92 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# -----------------------------------------------------------------------------
+# Repository-wide local files and generated artifacts
+# -----------------------------------------------------------------------------
+
+# Backend IDE and local Gradle build outputs
+backend/bin/
+backend/.gradle-user-home/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDEs and editors
+.idea/
+*.iml
+*.ipr
+*.iws
+*.swp
+*.swo
+*~
+.fleet/
+
+# Local environment and secret files. Keep sanitized templates trackable.
+.env
+.env.*
+!.env.example
+!.env.*.example
+!.env.sample
+!.env.*.sample
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+**/key.properties
+**/local.properties
+**/*service-account*.json
+**/serviceAccountKey.json
+
+# Dart and Flutter generated files
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.packages
+**/.pub/
+**/.pub-cache/
+**/coverage/
+**/doc/api/
+**/.widget_preview/
+**/app.*.symbols
+**/app.*.map.json
+
+# Android generated files
+**/.gradle/
+**/.cxx/
+**/captures/
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+
+# Apple platform generated files
+**/DerivedData/
+**/Pods/
+**/.symlinks/
+**/xcuserdata/
+**/Flutter/Generated.xcconfig
+**/Flutter/flutter_export_environment.sh
+**/Flutter/ephemeral/
+**/Runner/GeneratedPluginRegistrant.*
+
+# -----------------------------------------------------------------------------
+# 배포 산출물 (2026-09-08)
+# -----------------------------------------------------------------------------
+
+# GitHub Actions 가 bootJar 로 만들어 서버에 scp 하는 산출물.
+# 저장소에 들어갈 이유가 없고, 들어가면 저장소가 무거워지기만 한다.
+# gradle-wrapper.jar 는 빌드에 필요하므로 예외로 둔다.
+app.jar
+*.jar
+!**/gradle/wrapper/gradle-wrapper.jar
+
+# 로컬 실행 로그 (*.log 로 안 걸리는 것들)
+build-log.txt
+
+# Claude 작업 산출물. 로컬 참고용이라 저장소 공유 대상이 아니다.
+Claude outputs/

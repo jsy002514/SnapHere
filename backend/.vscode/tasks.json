@@ -1,0 +1,25 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "backend: classes",
+            "type": "process",
+            "command": "${workspaceFolder}/gradlew.bat",
+            "args": [
+                "classes",
+                "--console=plain"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$javac"
+            ],
+            "presentation": {
+                "reveal": "silent",
+                "panel": "dedicated",
+                "clear": true
+            }
+        }
+    ]
+}

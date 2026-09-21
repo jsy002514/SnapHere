@@ -1,0 +1,95 @@
+# SnapHere API — 공통 설정
+# 명세: docs/03-api-spec.md > 2. 공통 규약
+spring:
+  config:
+    # 개발 시 저장소 루트의 .env를 Spring properties로 읽는다. 운영 환경 변수는 이를 덮어쓴다.
+    import: optional:file:../.env[.properties]
+  application:
+    name: snaphere-api
+  jackson:
+    default-property-inclusion: always
+    time-zone: Asia/Seoul          # SYS-005
+    serialization:
+      write-dates-as-timestamps: false
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/snaphere}
+    username: ${DB_USERNAME:snaphere}
+    password: ${DB_PASSWORD:snaphere}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+
+server:
+  port: 8080
+  servlet:
+    context-path: /                # Base URL 접두어는 컨트롤러의 /api/v1 로 표기 (SYS-013)
+
+snaphere:
+  # true 로 두면 places·regions 를 읽지 않고 고정 데이터로 등급 판정을 돌린다.
+  stub-data: ${SNAPHERE_STUB_DATA:false}
+  api:
+    base-path: /api/v1             # SYS-013
+  jobs:
+    # 분산 락이 없어 여러 인스턴스에서는 배치 실행 인스턴스를 하나로 제한한다.
+    enabled: ${SNAPHERE_JOBS_ENABLED:true}
+    place-sync-cron: ${PLACE_SYNC_CRON:0 0 4 * * *}
+    event-sync-cron: ${EVENT_SYNC_CRON:0 30 4 * * *}
+    view-flush-cron: ${VIEW_FLUSH_CRON:0 * * * * *}
+    heatmap-realtime-delay: ${HEATMAP_REALTIME_DELAY:PT1M}
+    heatmap-periodic-delay: ${HEATMAP_PERIODIC_DELAY:PT10M}
+    ranking-delay: ${RANKING_DELAY:PT10M}
+    media-retry-delay: ${MEDIA_RETRY_DELAY:PT5M}
+    counter-reconcile-cron: ${COUNTER_RECONCILE_CRON:0 10 5 * * *}
+    account-purge-cron: ${ACCOUNT_PURGE_CRON:0 0 5 * * *}
+    search-log-purge-cron: ${SEARCH_LOG_PURGE_CRON:0 20 5 * * *}
+    # 만료된 리프레시 토큰 정리. 계정 파기·카운터 보정·검색로그 정리와 겹치지 않게 05:30.
+    refresh-token-purge-cron: ${REFRESH_TOKEN_PURGE_CRON:0 30 5 * * *}
+  paging:
+    default-size: 20               # SYS-003
+    max-size: 50
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:}
+  auth:
+    google-client-id: ${GOOGLE_OAUTH_CLIENT_ID:}
+    jwt-secret: ${SNAPHERE_JWT_SECRET:}
+    terms-version: ${SNAPHERE_TERMS_VERSION:2026-09-19}
+  share:
+    web-base-url: ${SNAPHERE_SHARE_BASE_URL:https://snaphere.app}  # 앱 설치 시 같은 주소가 앱으로 열린다 (CMU-021)
+    path-prefix: /p/
+    default-title: SnapHere              # OG 태그는 완성 문장이어야 한다 — SYS-010 의 예외 (CMU-020)
+    default-description: SnapHere에서 사진을 확인하세요
+  media:
+    provider: ${MEDIA_PROVIDER:stub}
+    bucket: ${MEDIA_S3_BUCKET:}
+    region: ${MEDIA_S3_REGION:ap-northeast-2}
+    public-base-url: ${MEDIA_PUBLIC_BASE_URL:}
+    presign-ttl: 5m                # SYS-020
+    max-file-size-bytes: 10485760  # PST-015
+  tour-api:
+    base-url: ${TOUR_API_BASE_URL:https://apis.data.go.kr/B551011}
+    service-key: ${TOUR_API_SERVICE_KEY:}
+    mobile-app: ${TOUR_API_MOBILE_APP:SnapHere}
+    mobile-os: ${TOUR_API_MOBILE_OS:ETC}
+  google:
+    geocoding-base-url: ${GOOGLE_GEOCODING_BASE_URL:https://maps.googleapis.com/maps/api/geocode/json}
+    maps-api-key: ${GOOGLE_MAPS_API_KEY:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+logging:
+  pattern:
+    level: "%5p [traceId:%X{traceId:-}]"
+  level:
+    com.snaphere.api: DEBUG
